@@ -1,0 +1,158 @@
+.cols {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+  align-content: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.colTitle {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-soft);
+  margin: 0;
+}
+
+/* --- tablero --- */
+.casillas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.cas {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--r-md);
+}
+.dot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.casText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.casLabel {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.casBody {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.t_teal {
+  background: var(--teal-tint);
+}
+.t_teal .dot {
+  background: var(--teal);
+}
+.t_yellow {
+  background: var(--yellow-tint);
+}
+.t_yellow .dot {
+  background: var(--yellow);
+}
+.t_orange {
+  background: var(--orange-tint);
+}
+.t_orange .dot {
+  background: var(--orange);
+}
+/* objeto negativo / crédito negativo = negro (convención, fijo en ambos temas) */
+.t_ink {
+  background: #241b16;
+  box-shadow: inset 0 0 0 2px var(--hairline);
+}
+.t_ink .dot {
+  background: #fdf6ea;
+  box-shadow: inset 0 0 0 2px #241b16;
+}
+.t_ink .casLabel {
+  color: #fdf6ea;
+}
+.t_ink .casBody {
+  color: #cbbfae;
+}
+
+/* --- tarjeta pedidos --- */
+.pedidos {
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.pedidosArt {
+  flex: none;
+}
+.pedidosText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.pedidosLabel {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-deep);
+}
+.pedidosBody {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.devLink {
+  align-self: flex-start;
+  margin-top: 0.3rem;
+  border: none;
+  background: none;
+  padding: 0.3rem 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.devLink:hover {
+  color: var(--text);
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  .cols {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+}

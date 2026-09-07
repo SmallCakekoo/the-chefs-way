@@ -1,0 +1,71 @@
+.autosave {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  margin-top: -0.4rem;
+}
+.cardNote {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-top: 0.6rem;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.4rem;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1.5px solid var(--hairline);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.rowLabel {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+.rowOff {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  margin-top: 0.5rem;
+  align-self: flex-start;
+  max-width: 100%;
+}
+.seg {
+  border: none;
+  background: none;
+  padding: 0.42rem 0.95rem;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segOn {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.version {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}

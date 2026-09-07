@@ -1,0 +1,73 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--hairline);
+}
+.on {
+  background: var(--yellow-tint);
+}
+.off .txt .name,
+.off .txt .desc {
+  color: var(--text-soft);
+}
+
+.medal {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+}
+.lock {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  font-family: var(--font-display);
+  color: var(--text-soft);
+}
+
+.txt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.name {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.desc {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+.host {
+  flex: none;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-secondary);
+  background: var(--secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--r-pill);
+}

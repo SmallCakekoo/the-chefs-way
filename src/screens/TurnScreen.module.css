@@ -1,0 +1,121 @@
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.ordersHead {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--primary-deep);
+}
+
+.stage {
+  width: min(460px, 100%);
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin: auto 0;
+  padding: 1rem 0;
+}
+
+.step {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-soft);
+}
+.pos {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin-top: -0.2rem;
+}
+.hint {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+}
+
+.card {
+  width: 100%;
+  margin-top: 0.4rem;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  padding: 1rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  text-align: left;
+}
+.resultHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.rolled {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+.cardTitle {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text);
+  margin: 0;
+}
+.cardText {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-soft);
+  margin: 0;
+}
+.opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.event {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--yellow-tint);
+  border-radius: var(--r-sm);
+  padding: 0.7rem 0.85rem;
+}
+.eventTitle {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.eventText {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.card > button {
+  margin-top: 0.3rem;
+}
+.card > span:first-child {
+  align-self: flex-start;
+}

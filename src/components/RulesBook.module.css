@@ -1,0 +1,135 @@
+.book {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md) var(--r-lg) var(--r-lg) var(--r-md);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  padding: 1.3rem 1.4rem 1rem 1.9rem;
+  overflow: hidden;
+  min-height: 340px;
+}
+
+/* lomo del librito */
+.spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  background: var(--surface-sunken);
+  box-shadow: inset -2.5px 0 0 var(--ink);
+}
+.spine::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 6px;
+  width: 0;
+  border-left: 2.5px dotted var(--text-soft);
+}
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  animation: leaf 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes leaf {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+.leaf {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-soft);
+}
+.art {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: 46% 54% 52% 48% / 52% 48% 54% 46%;
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  color: var(--text);
+  margin: 0.2rem 0 0;
+}
+.body {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+  margin: 0;
+  max-width: 34ch;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 2px dashed var(--hairline);
+}
+.arrow {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.09s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.arrow:hover:not(:disabled) {
+  background: var(--primary-tint);
+}
+.arrow:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.dots {
+  display: flex;
+  gap: 0.4rem;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 2px var(--ink);
+  cursor: pointer;
+  transition: width 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dotOn {
+  width: 26px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  box-shadow: none;
+}

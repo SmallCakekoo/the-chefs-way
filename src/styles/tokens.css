@@ -1,0 +1,134 @@
+/* ============================================================
+   Slammed · design tokens  —  FLAT / RECORTE
+   100% plano: sin sombras de elevacion, sin labios 3D. La
+   profundidad viene de bloques de color solidos, capas que se
+   solapan, leves rotaciones "colocado a mano" y contornos finos
+   de tinta solo donde hacen falta. Paleta del logo.
+   Dos tipografias: Tuneo Much (display, sin tildes) + Satoshi.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Tipografia */
+  --font-display: "Tuneo Much", "Satoshi Variable", system-ui, sans-serif;
+  --font-body: "Satoshi Variable", system-ui, sans-serif;
+
+  --step--1: 0.82rem;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.5rem;
+  --step-3: 1.95rem;
+  --step-4: 2.6rem;
+
+  /* --- Paleta base (del logo: rojo-naranja, naranja, negro sarten, crema) --- */
+  --coral: #f5451c;
+  --coral-deep: #d3330f;
+  --coral-tint: #ffe1d7;
+  --orange: #ff8a1e;
+  --orange-tint: #ffe7c9;
+  --teal: #16b3a4;
+  --teal-tint: #cdefeb;
+  --lime: #7cc63f;
+  --lime-tint: #e2f2ce;
+  --yellow: #fdb833;
+  --yellow-tint: #fdecc6;
+  --berry: #d64cae;
+  --berry-tint: #f7d9ef;
+  --forest: #1c5b34;
+
+  --paper: #fdf6ea;   /* crema del fondo */
+  --paper-2: #fbedd8; /* crema mas caliente */
+  --card: #ffffff;
+  --ink: #241b16;     /* negro sarten, calido */
+  --ink-2: #6f6157;   /* texto secundario */
+
+  /* --- Tokens semanticos (los que usan los componentes) --- */
+  --bg: var(--paper);
+  --bg-room: var(--paper-2);
+  --surface: var(--card);
+  --surface-2: var(--paper);
+  --surface-sunken: #f2e7d3;
+  --placeholder: #d8d4cc; /* recuadro gris "va arte aqui" */
+  --text: var(--ink);
+  --text-soft: var(--ink-2);
+  --primary: var(--coral);
+  --primary-deep: var(--coral-deep);
+  --primary-tint: var(--coral-tint);
+  --on-primary: #fff7ef;
+  --secondary: var(--teal);
+  --secondary-tint: var(--teal-tint);
+  --on-secondary: #fff7ef;
+  --hairline: #e7dcc7;      /* separadores muy suaves */
+  --line-ink: 2.5px solid var(--ink); /* contorno recorte, uso puntual */
+  --line-ink-thin: 2px solid var(--ink);
+
+  /* Radios */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 34px;
+  --r-pill: 999px;
+
+  /* Sin sombras de elevacion. Solo un halo plano opcional para el
+     marco de la tablet (no para componentes). */
+  --frame-halo: 0 0 0 0 transparent;
+
+  /* Espaciado */
+  --space-1: 0.35rem;
+  --space-2: 0.6rem;
+  --space-3: 0.9rem;
+  --space-4: 1.2rem;
+  --space-5: 1.6rem;
+  --space-6: 2.2rem;
+
+  /* Motion (curvas literales: el navegador de preview rompe var() en transition) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --press: 0.96;
+
+  /* Foco accesible */
+  --focus-ring: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+}
+
+/* ================= TEMA OSCURO (plano) ================= */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #221c1a;
+  --paper-2: #1a1513;
+  --card: #2e2723;
+  --ink: #f6ece0;
+  --ink-2: #b3a596;
+
+  --bg: var(--paper);
+  --bg-room: var(--paper-2);
+  --surface: var(--card);
+  --surface-2: #2a231f;
+  --surface-sunken: #1c1613;
+  --placeholder: #4a453f;
+  --text: var(--ink);
+  --text-soft: var(--ink-2);
+
+  --coral: #ff6a3d;
+  --coral-deep: #ff8a63;
+  --coral-tint: #4a2418;
+  --primary: var(--coral);
+  --primary-deep: var(--coral-deep);
+  --primary-tint: var(--coral-tint);
+  --on-primary: #24140d;
+  --secondary: #2fd0bf;
+  --secondary-tint: #123a36;
+  --on-secondary: #062420;
+
+  --hairline: #3d332c;
+  --line-ink: 2.5px solid var(--ink);
+  --line-ink-thin: 2px solid var(--ink);
+
+  --yellow-tint: #3e321a;
+  --lime-tint: #263a1c;
+  --teal-tint: #123a36;
+  --berry-tint: #3d2138;
+  --orange-tint: #43301a;
+
+  --focus-ring: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+}

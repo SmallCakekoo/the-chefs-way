@@ -1,0 +1,1298 @@
+<title>Prototipo Interactivo</title>
+<style>
+  /* ---------- Sistema tipográfico ----------
+     "TT Munch" (fonts/TTMunch.woff2) es un archivo de muestra: SOLO trae
+     A-Z a-z 0-9 y espacio ,  sin tildes, ñ ni signos de puntuación. Por eso
+     se usa únicamente en el wordmark "Slammed". Todo lo demás va en Satoshi
+     Variable (fuente variable real, eje 300-900, Latin completo).
+     Si más adelante se consigue un TT Munch completo (con máster Bold y
+     puntuación), los títulos pueden pasar a var(--font-display). */
+  @font-face {
+    font-family: "TT Munch";
+    src: url("fonts/TTMunch.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Satoshi Variable";
+    src: url("fonts/SatoshiVariable.woff2") format("woff2");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --font-display: "TT Munch", "Satoshi Variable", system-ui, sans-serif;
+    --font-body: "Satoshi Variable", system-ui, sans-serif;
+
+    --bg: #fdfbf7;
+    --surface: #ffffff;
+    --surface-tinted: #fff8ec;
+    --ink: #2b2320;
+    --ink-soft: #8a7d72;
+    --primary: #ff4d2e;
+    --primary-deep: #d9381e;
+    --secondary: #14b8a6;
+    --secondary-light: #5eead4;
+    --yellow: #fbbf24;
+    --forest: #14532d;
+    --on-primary: #fff8ec;
+    --border: #e7e0d4;
+    --border-strong: #d8cdb8;
+
+    /* Bordes 3D "pressable" para botones */
+    --primary-edge: #c22f18;
+    --secondary-edge: #0e8a7d;
+    --ghost-edge: #ded3bd;
+
+    /* Escala de radios */
+    --r-sm: 14px;
+    --r-md: 20px;
+    --r-lg: 28px;
+    --r-pill: 999px;
+
+    --shadow-soft:
+      0 1px 2px rgba(43, 35, 32, 0.05), 0 4px 12px rgba(43, 35, 32, 0.06);
+    /* Sombra tipo sticker para tarjetas */
+    --shadow-card:
+      0 2px 0 var(--border-strong), 0 10px 22px -8px rgba(43, 35, 32, 0.18);
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    font-synthesis: none;
+  }
+  /* Sin esto, .ticket / .fork-card (display:flex) ganan al [hidden] del UA */
+  [hidden] {
+    display: none !important;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Fondo cálido con textura muy sutil de puntos */
+    background-color: #f4ead8;
+    background-image:
+      radial-gradient(rgba(43, 35, 32, 0.04) 1.1px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
+  h1,
+  h2,
+  h3,
+  .display {
+    font-family: var(--font-body);
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  /* Marco tablet horizontal (iPad 4:3). En pantallas menores baja a columna
+     tipo movil (ver @media al final). */
+  .app {
+    width: 1024px;
+    height: 768px;
+    max-width: 100vw;
+    max-height: 100vh;
+    margin: 0 auto;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 60px -20px rgba(43, 35, 32, 0.35);
+  }
+
+  .header {
+    padding: 1rem 1.75rem;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    background: var(--surface);
+    flex: none;
+    position: relative;
+  }
+  /* Cinta de cuadros vichy bajo el header (guiño tablero de cocina) */
+  .header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 6px;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        var(--primary) 0 10px,
+        transparent 10px 20px
+      );
+    opacity: 0.5;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+  }
+  .header-sub {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  /* ---------- Layout de dos paneles (tablet horizontal) ---------- */
+  .panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 2.25rem;
+    padding: 1.75rem 2rem;
+    align-content: stretch;
+  }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.05rem;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .pane.vcenter {
+    justify-content: center;
+  }
+  .pane.center {
+    justify-content: center;
+    align-items: center;
+  }
+  .pane-divider {
+    border-left: 2px dashed var(--border-strong);
+    padding-left: 2.25rem;
+    margin-left: -0.125rem;
+  }
+
+  /* Turno: una sola columna centrada hasta que hay dado tirado o bifurcacion */
+  .turno-panes {
+    grid-template-columns: 1fr 1fr;
+  }
+  @supports selector(:has(*)) {
+    .turno-panes:not(:has(#forkBox:not([hidden]))):not(
+        :has(#resultBox:not([hidden]))
+      ) {
+      grid-template-columns: minmax(0, 440px);
+      justify-content: center;
+    }
+    .turno-panes:not(:has(#forkBox:not([hidden]))):not(
+        :has(#resultBox:not([hidden]))
+      )
+      .pane-divider {
+      display: none;
+    }
+  }
+
+  /* ---------- Onboarding ---------- */
+  #screen-onboarding {
+    padding: 0;
+  }
+  .onb-scroller {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    flex: 1;
+    scrollbar-width: none;
+  }
+  .onb-scroller::-webkit-scrollbar {
+    display: none;
+  }
+  .onb-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2.75rem 3.5rem;
+    gap: 3rem;
+  }
+  .onb-art {
+    flex: 1 1 48%;
+    align-self: stretch;
+    margin: 1.5rem 0;
+    min-height: 180px;
+    background: var(--surface-tinted);
+    border: 2px solid var(--border-strong);
+    border-radius: 42% 58% 56% 44% / 48% 46% 54% 52%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-card);
+  }
+  .onb-art > div {
+    transform: scale(2.4);
+  }
+  .onb-text {
+    flex: 1 1 52%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+  .onb-title {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.12;
+  }
+  .onb-body {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 46ch;
+  }
+
+  .onb-footer {
+    padding: 1rem 3.5rem 1.6rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+  .onb-dots {
+    display: flex;
+    gap: 0.4rem;
+    flex: 1;
+  }
+  .onb-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition:
+      width 0.2s ease,
+      background 0.2s ease;
+  }
+  .onb-dot.on {
+    width: 26px;
+    border-radius: var(--r-pill);
+    background: var(--primary);
+  }
+
+  /* ---------- Shared ---------- */
+  .content {
+    padding: 1.3rem 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    flex: 1;
+  }
+
+  /* Boton "pressable": pastilla con borde 3D inferior que se hunde al pulsar */
+  .btn {
+    border: none;
+    border-radius: var(--r-pill);
+    padding: 0.9rem 1.3rem;
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 1.02rem;
+    letter-spacing: 0.01em;
+    background: var(--surface-tinted);
+    color: var(--ink);
+    cursor: pointer;
+    -webkit-appearance: none;
+    box-shadow: 0 5px 0 var(--ghost-edge);
+    transition:
+      transform 0.06s ease,
+      box-shadow 0.06s ease,
+      filter 0.06s ease;
+  }
+  .btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 var(--ghost-edge);
+  }
+  .btn.primary {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: 0 5px 0 var(--primary-edge);
+  }
+  .btn.primary:active {
+    box-shadow: 0 1px 0 var(--primary-edge);
+  }
+  .btn.secondary {
+    background: var(--secondary);
+    color: var(--on-primary);
+    box-shadow: 0 5px 0 var(--secondary-edge);
+  }
+  .btn.secondary:active {
+    box-shadow: 0 1px 0 var(--secondary-edge);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 5px 0 var(--ghost-edge);
+    filter: saturate(0.6);
+  }
+  .btn.wide {
+    width: 100%;
+  }
+
+  .field {
+    border: 2px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 0.85rem 1rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1.02rem;
+    color: var(--ink);
+    background: var(--surface);
+    width: 100%;
+    box-shadow: inset 0 2px 0 rgba(43, 35, 32, 0.04);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(255, 77, 46, 0.15);
+  }
+  .field::placeholder {
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  /* Etiqueta de seccion tipo pestaña */
+  .label-sm {
+    align-self: flex-start;
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-deep);
+    background: var(--surface-tinted);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--r-pill);
+    padding: 0.3rem 0.75rem;
+  }
+  .display-title {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -0.015em;
+    text-align: center;
+    margin: 0;
+  }
+  .body-text {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .swatches {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .swatch {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 3px solid var(--surface);
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 2px 0 var(--border-strong);
+    transition:
+      transform 0.08s ease,
+      box-shadow 0.08s ease;
+  }
+  .swatch:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--border-strong);
+  }
+  .swatch.sel {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    transform: scale(1.08);
+  }
+  .swatch:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .roster {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .roster-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 0.65rem 0.8rem;
+    background: var(--surface);
+    box-shadow: 0 2px 0 var(--border-strong);
+  }
+  .roster-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex: none;
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1.5px var(--border-strong);
+  }
+  .roster-name {
+    flex: 1;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--ink);
+  }
+  .roster-rm {
+    background: none;
+    border: none;
+    padding: 0.2rem;
+    cursor: pointer;
+    line-height: 0;
+    color: var(--ink-soft);
+  }
+
+  .limit-note {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  .turn-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: 0.55rem 1.3rem;
+    align-self: center;
+    box-shadow: 0 4px 0 var(--ink);
+  }
+  .turn-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1.5px var(--ink);
+  }
+  .turn-strip span {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+
+  .pos-line {
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .die {
+    align-self: center;
+    width: 104px;
+    height: 104px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 3px solid var(--ink);
+    box-shadow: 0 6px 0 var(--ink);
+  }
+  .die.rolling {
+    animation: die-tumble 0.18s infinite ease-in-out;
+  }
+  @keyframes die-tumble {
+    0% {
+      transform: rotate(-12deg) scale(0.94);
+    }
+    50% {
+      transform: rotate(12deg) scale(1.06);
+    }
+    100% {
+      transform: rotate(-12deg) scale(0.94);
+    }
+  }
+  .die svg {
+    width: 64px;
+    height: 64px;
+  }
+  .pip {
+    fill: var(--ink);
+  }
+
+  .fork-card {
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 2px solid var(--border-strong);
+    padding: 1.1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    box-shadow: var(--shadow-card);
+  }
+  .fork-card .body-text {
+    text-align: left;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .fork-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .fork-opt {
+    border: 2px solid var(--border-strong);
+    border-radius: var(--r-pill);
+    padding: 0.7rem 0.7rem;
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.95rem;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--border-strong);
+    transition:
+      transform 0.06s ease,
+      box-shadow 0.06s ease,
+      background 0.1s ease;
+  }
+  .fork-opt:hover {
+    background: var(--surface-tinted);
+  }
+  .fork-opt:active {
+    background: var(--secondary-light);
+    border-color: var(--secondary);
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--secondary);
+  }
+
+  .ticket {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Tarjeta de resultado tipo ticket de cocina (borde superior dentado) */
+  .ticket-body {
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 2px solid var(--border-strong);
+    padding: 1.2rem 1.2rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    align-items: center;
+    box-shadow: var(--shadow-card);
+    position: relative;
+  }
+  .ticket-body::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: -2px;
+    height: 8px;
+    background: radial-gradient(
+        circle at 6px 0,
+        transparent 0 5px,
+        var(--border-strong) 5px 6px,
+        transparent 6px
+      )
+      repeat-x;
+    background-size: 14px 8px;
+  }
+
+  .tag {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.9rem;
+    border-radius: var(--r-pill);
+    color: var(--on-primary);
+    border: 2px solid rgba(43, 35, 32, 0.12);
+  }
+  .tag.o {
+    background: #c6622a;
+  }
+  .tag.a {
+    background: var(--secondary);
+  }
+  .tag.y {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .tag.b {
+    background: var(--ink);
+  }
+
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 0.6rem 0.8rem;
+    background: var(--surface);
+    box-shadow: 0 2px 0 var(--border-strong);
+  }
+  .rank-row:first-child {
+    border-color: var(--yellow);
+    box-shadow: 0 2px 0 #e0a615;
+  }
+  .rank-num {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 1.6rem;
+    color: var(--primary-deep);
+  }
+
+  /* ---------- Fallback a columna movil (pantallas angostas / vertical) ---------- */
+  @media (max-width: 900px), (orientation: portrait) {
+    body {
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    .app {
+      width: 100%;
+      max-width: 480px;
+      height: auto;
+      min-height: 100dvh;
+      max-height: none;
+      overflow: visible;
+    }
+    .panes,
+    .turno-panes {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      padding: 1.3rem 1.25rem 1.5rem;
+      max-width: none;
+      margin: 0;
+    }
+    .pane,
+    .pane.center,
+    .pane.vcenter {
+      overflow-y: visible;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    .pane-divider {
+      border-left: none;
+      padding-left: 0;
+      margin-left: 0;
+      display: flex;
+    }
+    .onb-slide {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1.1rem;
+      padding: 2.4rem 1.75rem 1rem;
+    }
+    .onb-art {
+      margin: 0;
+    }
+    .onb-title {
+      font-size: 1.55rem;
+    }
+    .onb-footer {
+      padding: 1rem 1.75rem 1.6rem;
+    }
+  }
+</style>
+
+<div class="app" data-theme="light">
+  <!-- ONBOARDING (3 pantallas) -->
+  <div class="screen active" id="screen-onboarding">
+    <div class="onb-scroller" id="onbScroller">
+      <div class="onb-slide">
+        <div class="onb-art">
+          <div
+            style="
+              width: 60px;
+              height: 60px;
+              border-radius: 16px;
+              background: var(--primary);
+            "
+          ></div>
+        </div>
+        <div class="onb-text">
+          <p class="onb-title">La cocina está saturada</p>
+          <p class="onb-body">
+            Cooperen entre todos para armar pedidos a tiempo. Si el restaurante
+            no rinde, quiebra, y eso les pasa a todos por igual.
+          </p>
+        </div>
+      </div>
+      <div class="onb-slide">
+        <div class="onb-art">
+          <div
+            style="
+              width: 60px;
+              height: 60px;
+              border-radius: 50%;
+              background: var(--secondary);
+            "
+          ></div>
+        </div>
+        <div class="onb-text">
+          <p class="onb-title">Pero solo uno es empleado del mes</p>
+          <p class="onb-body">
+            Ayudar o sabotear queda en tus manos. Cada carta y cada decisión te
+            acercan o alejan del puesto individual.
+          </p>
+        </div>
+      </div>
+      <div class="onb-slide">
+        <div class="onb-art">
+          <div
+            style="
+              width: 60px;
+              height: 60px;
+              border-radius: 14px;
+              background: var(--yellow);
+            "
+          ></div>
+        </div>
+        <div class="onb-text">
+          <p class="onb-title">Un solo dispositivo, por turnos</p>
+          <p class="onb-body">
+            El tablero y las cartas están en la mesa. Este dispositivo se pasa de
+            jugador en jugador: tira tu dado y sigue jugando.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="onb-footer">
+      <div class="onb-dots" id="onbDots"></div>
+      <button class="btn primary" id="onbBtn" onclick="onbNext()">
+        Siguiente
+      </button>
+    </div>
+  </div>
+
+  <!-- REGISTRO -->
+  <div class="screen" id="screen-registro">
+    <div class="header">
+      <span class="wordmark">Slammed</span
+      ><span class="header-sub">Jugadores</span>
+    </div>
+    <div class="panes">
+      <div class="pane">
+        <span class="label-sm">Nuevo jugador</span>
+        <input
+          class="field"
+          id="nameInput"
+          placeholder="Nombre del jugador"
+          maxlength="14"
+          onkeydown="if (event.key === 'Enter') addPlayer();"
+        />
+        <span class="label-sm">Elige tu color</span>
+        <div class="swatches" id="swatches"></div>
+        <button class="btn secondary wide" id="addBtn" onclick="addPlayer()">
+          Agregar jugador
+        </button>
+      </div>
+      <div class="pane pane-divider">
+        <span class="label-sm">Jugadores en la partida</span>
+        <div class="roster" id="roster"></div>
+        <p class="limit-note" id="limitNote">Máximo 4 jugadores</p>
+        <button
+          class="btn primary wide"
+          id="startBtn"
+          onclick="startGame()"
+          disabled
+          style="margin-top: auto"
+        >
+          Empezar partida
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TURNO -->
+  <div class="screen" id="screen-turno">
+    <div class="header">
+      <span class="wordmark">Slammed</span><span class="header-sub">Turno</span>
+    </div>
+    <div class="panes turno-panes">
+      <div class="pane center">
+        <div class="turn-strip">
+          <div class="turn-dot" id="turnDot"></div>
+          <span id="turnName">, </span>
+        </div>
+        <p class="pos-line" id="posLine">en INICIO</p>
+        <div class="die" id="die"></div>
+        <button class="btn primary wide" id="rollBtn" onclick="rollDice()">
+          Tirar dado
+        </button>
+      </div>
+
+      <div class="pane pane-divider">
+        <div id="forkBox" hidden class="fork-card">
+          <p class="body-text" id="forkQuestion" style="margin: 0">
+            ¿Por dónde te fuiste en la mesa?
+          </p>
+          <div class="fork-opts" id="forkOpts"></div>
+        </div>
+
+        <div id="resultBox" hidden class="ticket">
+          <div class="ticket-body">
+            <span class="tag" id="resultTag">CASILLA</span>
+            <p class="body-text" id="resultText" style="color: var(--ink)"></p>
+          </div>
+          <button
+            class="btn primary wide"
+            onclick="nextTurn()"
+            style="margin-top: 0.8rem"
+          >
+            Siguiente jugador
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIN -->
+  <div class="screen" id="screen-fin">
+    <div class="header">
+      <span class="wordmark">Slammed</span
+      ><span class="header-sub">Resultado</span>
+    </div>
+    <div class="panes">
+      <div class="pane">
+        <p class="display-title" style="text-align: left">Partida terminada</p>
+        <p class="body-text" style="text-align: left">
+          Orden de llegada a FIN. El "mejor jugador" real también cuenta pedidos
+          completados y velocidad, no solo llegar primero.
+        </p>
+        <button class="btn wide" onclick="location.reload()">
+          Nueva partida
+        </button>
+      </div>
+      <div class="pane pane-divider">
+        <span class="label-sm">Orden de llegada</span>
+        <div class="roster" id="rankList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PALETTE = ["#FF4D2E", "#14B8A6", "#FBBF24", "#14532D"];
+  const MAX_PLAYERS = 4;
+  const FINAL_SQUARE = 43;
+
+  // Bifurcaciones segun el mapa "Slammed - Chef's Way". Cada clave es la
+  // casilla donde se decide; "skip" = casillas que ahorra esa rama ("omite N"
+  // en el mapa). Ramas sin etiqueta "omite" se asumen de igual largo (skip 0).
+  // Pendiente de confirmar con el equipo: si 4a/4b y 14a/14b son decisiones
+  // nuevas o continuacion de 3 y 13, y si la casilla 27 lleva bifurcacion.
+  const FORKS = {
+    3: [
+      { label: "Camino 3a", skip: 0 },
+      { label: "Camino 3b (omite 1)", skip: 1 },
+    ],
+    13: [
+      { label: "Camino 13a", skip: 0 },
+      { label: "Camino 13b", skip: 0 },
+    ],
+    15: [
+      { label: "Camino 15a", skip: 0 },
+      { label: "Camino 15b (omite 2)", skip: 2 },
+      { label: "Camino 15c (omite 1)", skip: 1 },
+    ],
+    20: [
+      { label: "Camino 20a", skip: 0 },
+      { label: "Camino 20b", skip: 0 },
+    ],
+    25: [
+      { label: "Camino 25b", skip: 0 },
+      { label: "Camino 25a (omite 1)", skip: 1 },
+    ],
+    26: [
+      { label: "Camino 26a", skip: 0 },
+      { label: "Camino 26b", skip: 0 },
+    ],
+    28: [
+      { label: "Camino 28a", skip: 0 },
+      { label: "Camino 28b", skip: 0 },
+    ],
+    34: [
+      { label: "Camino 34a", skip: 0 },
+      { label: "Camino 34b", skip: 0 },
+    ],
+    35: [
+      { label: "Camino 35a", skip: 0 },
+      { label: "Camino 35b (omite 8)", skip: 8 },
+    ],
+  };
+
+  // Tipo de casilla por número (1-43), semilla fija = placeholder consistente
+  // mientras se confirma el mapa final del equipo.
+  function seededBoard() {
+    let seed = 88;
+    function rand() {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    }
+    const counts = { O: 15, A: 11, Y: 11, B: 6 };
+    let pool = [];
+    for (const k in counts) for (let i = 0; i < counts[k]; i++) pool.push(k);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool;
+  }
+  const BOARD = seededBoard();
+  const CASILLA_INFO = {
+    O: { tag: "o", label: "Normal", text: "No pasa nada en esta casilla." },
+    A: {
+      tag: "a",
+      label: "Objeto positivo",
+      text: "Saca una carta de la pila de ayuda (y tira el dado de color en la mesa).",
+    },
+    Y: {
+      tag: "y",
+      label: "Evento",
+      text: "La app dispara un evento aleatorio.",
+    },
+    B: {
+      tag: "b",
+      label: "Objeto negativo",
+      text: "Saca una carta de la pila de sabotaje (y tira el dado de color en la mesa).",
+    },
+  };
+
+  // --- Onboarding ---
+  const onbScroller = document.getElementById("onbScroller");
+  const onbSlideCount = 3;
+  function renderOnbDots() {
+    const box = document.getElementById("onbDots");
+    box.innerHTML = "";
+    const idx = currentOnbSlide();
+    for (let i = 0; i < onbSlideCount; i++) {
+      const d = document.createElement("span");
+      d.className = "onb-dot" + (i === idx ? " on" : "");
+      box.appendChild(d);
+    }
+    document.getElementById("onbBtn").textContent =
+      idx === onbSlideCount - 1 ? "Comenzar" : "Siguiente";
+  }
+  function currentOnbSlide() {
+    return Math.round(onbScroller.scrollLeft / onbScroller.clientWidth);
+  }
+  function onbNext() {
+    const idx = currentOnbSlide();
+    if (idx >= onbSlideCount - 1) {
+      goTo("registro");
+      return;
+    }
+    onbScroller.scrollTo({
+      left: (idx + 1) * onbScroller.clientWidth,
+      behavior: "smooth",
+    });
+  }
+  onbScroller.addEventListener("scroll", () => {
+    window.requestAnimationFrame(renderOnbDots);
+  });
+  renderOnbDots();
+
+  function goTo(name) {
+    document
+      .querySelectorAll(".screen")
+      .forEach((s) => s.classList.remove("active"));
+    document.getElementById("screen-" + name).classList.add("active");
+  }
+
+  // --- Registro ---
+  let players = [];
+  let chosenColor = null;
+
+  function renderSwatches() {
+    const box = document.getElementById("swatches");
+    box.innerHTML = "";
+    PALETTE.forEach((c) => {
+      const used = players.some((p) => p.color === c);
+      const b = document.createElement("button");
+      b.className = "swatch" + (chosenColor === c ? " sel" : "");
+      b.style.background = c;
+      b.disabled = used;
+      b.onclick = () => {
+        chosenColor = c;
+        renderSwatches();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function renderRoster() {
+    const box = document.getElementById("roster");
+    box.innerHTML = "";
+    players.forEach((p, i) => {
+      const row = document.createElement("div");
+      row.className = "roster-row";
+      row.innerHTML = `<span class="roster-dot" style="background:${p.color}"></span><span class="roster-name">${p.name}</span>`;
+      const rm = document.createElement("button");
+      rm.className = "roster-rm";
+      rm.innerHTML =
+        '<svg width="16" height="16" viewBox="0 0 16 16"><line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="2"/><line x1="14" y1="2" x2="2" y2="14" stroke="currentColor" stroke-width="2"/></svg>';
+      rm.onclick = () => {
+        players.splice(i, 1);
+        renderRoster();
+        renderSwatches();
+        updateAddState();
+      };
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+    updateAddState();
+  }
+
+  function updateAddState() {
+    const full = players.length >= MAX_PLAYERS;
+    document.getElementById("addBtn").disabled = full;
+    document.getElementById("startBtn").disabled = players.length < 1;
+    document.getElementById("limitNote").textContent = full
+      ? "Ya tienes 4 jugadores, el máximo por partida"
+      : "Máximo 4 jugadores";
+  }
+
+  function addPlayer() {
+    if (players.length >= MAX_PLAYERS) return;
+    const input = document.getElementById("nameInput");
+    const name = input.value.trim();
+    if (!name || !chosenColor) return;
+    players.push({ name, color: chosenColor });
+    input.value = "";
+    chosenColor = null;
+    renderRoster();
+    renderSwatches();
+  }
+
+  // --- Turno ---
+  let order = [];
+  let posOf = {};
+  let finishedOf = {};
+  let finishOrder = [];
+  let turnIdx = 0;
+
+  function startGame() {
+    order = players.map((p) => p.name);
+    posOf = {};
+    finishedOf = {};
+    finishOrder = [];
+    order.forEach((n) => {
+      posOf[n] = 0;
+      finishedOf[n] = false;
+    });
+    turnIdx = 0;
+    goTo("turno");
+    renderTurn();
+  }
+
+  function currentPlayer() {
+    return players.find((p) => p.name === order[turnIdx]);
+  }
+
+  const DIE_PIPS = {
+    1: [[50, 50]],
+    2: [
+      [27, 27],
+      [73, 73],
+    ],
+    3: [
+      [27, 27],
+      [50, 50],
+      [73, 73],
+    ],
+    4: [
+      [27, 27],
+      [73, 27],
+      [27, 73],
+      [73, 73],
+    ],
+    5: [
+      [27, 27],
+      [73, 27],
+      [50, 50],
+      [27, 73],
+      [73, 73],
+    ],
+    6: [
+      [27, 25],
+      [73, 25],
+      [27, 50],
+      [73, 50],
+      [27, 75],
+      [73, 75],
+    ],
+  };
+  function renderDie(value) {
+    const pips = DIE_PIPS[value] || [];
+    const circles = pips
+      .map(
+        ([x, y]) => `<circle class="pip" cx="${x}" cy="${y}" r="8"></circle>`,
+      )
+      .join("");
+    document.getElementById("die").innerHTML =
+      `<svg viewBox="0 0 100 100">${circles}</svg>`;
+  }
+
+  function renderTurn() {
+    const p = currentPlayer();
+    document.getElementById("turnDot").style.background = p.color;
+    document.getElementById("turnName").textContent = p.name;
+    document.getElementById("posLine").textContent =
+      posOf[p.name] === 0 ? "en INICIO" : `en la casilla ${posOf[p.name]}`;
+    document.getElementById("die").innerHTML = "";
+    document.getElementById("die").classList.remove("rolling");
+    document.getElementById("rollBtn").hidden = false;
+    document.getElementById("rollBtn").disabled = false;
+    document.getElementById("forkBox").hidden = true;
+    document.getElementById("resultBox").hidden = true;
+  }
+
+  function rollDice() {
+    document.getElementById("rollBtn").disabled = true;
+    const die = document.getElementById("die");
+    die.classList.add("rolling");
+    let ticks = 0;
+    const iv = setInterval(() => {
+      renderDie(1 + Math.floor(Math.random() * 6));
+      ticks++;
+      if (ticks > 7) {
+        clearInterval(iv);
+        die.classList.remove("rolling");
+        const roll = 1 + Math.floor(Math.random() * 6);
+        renderDie(roll);
+        resolveRoll(roll);
+      }
+    }, 70);
+  }
+
+  function resolveRoll(roll) {
+    const p = currentPlayer();
+    const landing = Math.min(posOf[p.name] + roll, FINAL_SQUARE);
+    if (FORKS[landing] && landing < FINAL_SQUARE) {
+      showFork(landing);
+    } else {
+      settleSquare(landing);
+    }
+  }
+
+  function showFork(landing) {
+    document.getElementById("forkQuestion").textContent =
+      `Caíste en la casilla ${landing} (bifurcación). ¿Por dónde te fuiste en la mesa?`;
+    const box = document.getElementById("forkOpts");
+    box.innerHTML = "";
+    FORKS[landing].forEach((opt) => {
+      const b = document.createElement("button");
+      b.className = "fork-opt";
+      b.textContent = opt.label;
+      b.onclick = () => {
+        document.getElementById("forkBox").hidden = true;
+        const final = Math.min(landing + opt.skip, FINAL_SQUARE);
+        settleSquare(final);
+      };
+      box.appendChild(b);
+    });
+    document.getElementById("forkBox").hidden = false;
+  }
+
+  function settleSquare(square) {
+    const p = currentPlayer();
+    posOf[p.name] = square;
+    const info =
+      square >= FINAL_SQUARE
+        ? {
+            tag: "a",
+            label: "FIN",
+            text: `${p.name} llegó al final del tablero.`,
+          }
+        : CASILLA_INFO[BOARD[square - 1]];
+    document.getElementById("resultTag").className = "tag " + info.tag;
+    document.getElementById("resultTag").textContent =
+      square >= FINAL_SQUARE ? "FIN" : `Casilla ${square} · ${info.label}`;
+    document.getElementById("resultText").textContent = info.text;
+    document.getElementById("resultBox").hidden = false;
+    if (square >= FINAL_SQUARE) {
+      finishedOf[p.name] = true;
+      finishOrder.push(p.name);
+    }
+  }
+
+  function nextTurn() {
+    if (order.every((n) => finishedOf[n])) {
+      showFin();
+      return;
+    }
+    do {
+      turnIdx = (turnIdx + 1) % order.length;
+    } while (finishedOf[order[turnIdx]]);
+    renderTurn();
+  }
+
+  function showFin() {
+    goTo("fin");
+    const list = document.getElementById("rankList");
+    list.innerHTML = "";
+    finishOrder.forEach((name, i) => {
+      const p = players.find((pl) => pl.name === name);
+      const row = document.createElement("div");
+      row.className = "rank-row";
+      row.innerHTML = `<span class="rank-num">${i + 1}.</span><span class="roster-dot" style="background:${p.color}"></span><span class="roster-name">${p.name}</span>`;
+      list.appendChild(row);
+    });
+  }
+
+  renderSwatches();
+  renderRoster();
+</script>

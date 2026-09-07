@@ -1,0 +1,71 @@
+.winner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: var(--yellow-tint);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.winnerName {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--step-2);
+  margin: 0;
+  color: var(--text);
+}
+.note {
+  color: var(--text-soft);
+}
+.actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--hairline);
+}
+.badgeText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.badgeName {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.badgeDesc {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+.who {
+  flex: none;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--on-secondary);
+  background: var(--secondary);
+  border-radius: var(--r-pill);
+  padding: 0.2rem 0.7rem;
+}

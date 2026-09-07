@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "createdAt": "2026-09-07T02:22:29.531Z",
+        "reason": "Slammed moodboard is 'food-game chunky' (Kirby menus, cute food apps, physical dice): deliberate overshoot on die-settle and toggle knob. Token predates this session as --ease-spring in tokens.css."
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+.wrap {
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.circle {
+  border-radius: 50%;
+}
+.round {
+  border-radius: var(--r-md);
+}
+
+.wrap img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  display: block;
+  /* los PNG vienen con lienzo vertical; contain los centra sin recortar */
+}
+
+.sm {
+  width: 34px;
+  height: 34px;
+}
+.md {
+  width: 48px;
+  height: 48px;
+}
+.lg {
+  width: 72px;
+  height: 72px;
+}
+.xl {
+  width: 108px;
+  height: 108px;
+}

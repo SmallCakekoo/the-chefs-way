@@ -1,0 +1,56 @@
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--hairline);
+}
+.row:first-child:has(.num) {
+  background: var(--yellow-tint);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.num {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.row:first-child:has(.num) .num {
+  background: var(--yellow);
+}
+.name {
+  flex: 1;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--text);
+}
+.rm {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  line-height: 0;
+  color: var(--text-soft);
+  border-radius: var(--r-pill);
+}
+.rm:active {
+  transform: scale(0.85);
+}

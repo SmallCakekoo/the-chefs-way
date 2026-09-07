@@ -1,0 +1,48 @@
+.wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.bit {
+  position: absolute;
+  top: -6%;
+  width: 12px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.round {
+  border-radius: 50%;
+  height: 12px;
+}
+@keyframes confetti-fall {
+  0% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  100% {
+    translate: var(--sway, 0px) 118vh;
+    rotate: 540deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bit {
+    animation: none;
+    top: 12%;
+  }
+  .bit:nth-child(2n) {
+    top: 28%;
+  }
+  .bit:nth-child(3n) {
+    top: 48%;
+  }
+  .bit:nth-child(5n) {
+    top: 68%;
+  }
+}

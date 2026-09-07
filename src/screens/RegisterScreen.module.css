@@ -1,0 +1,34 @@
+.note {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-align: center;
+}
+.start {
+  margin-top: auto;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.4rem 1.2rem;
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.emptyArt {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+}
+.emptyText {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+  max-width: 32ch;
+  margin: 0;
+}

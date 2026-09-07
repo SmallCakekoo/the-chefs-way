@@ -1,0 +1,8 @@
+.intro {
+  color: var(--text-soft);
+  max-width: 60ch;
+}
+.intro strong {
+  font-weight: 800;
+  color: var(--text);
+}

@@ -1,0 +1,105 @@
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.single {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-5);
+}
+
+.bleed {
+  display: flex;
+  flex-direction: column;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem 2.4rem;
+  padding: 1.6rem 2rem;
+}
+
+.flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 1.6rem 2rem;
+  overflow-y: auto;
+}
+
+.turn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem 2.4rem;
+  padding: 1.6rem 2rem;
+}
+@supports selector(:has(*)) {
+  .turn:not(:has([data-outcome])) {
+    grid-template-columns: minmax(0, 480px);
+    justify-content: center;
+  }
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+.vcenter {
+  justify-content: center;
+}
+.center {
+  justify-content: center;
+  align-items: center;
+}
+.divider {
+  border-left: 2px dashed var(--hairline);
+  padding-left: 2.4rem;
+  margin-left: -0.125rem;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  .panes,
+  .turn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1.3rem 1.25rem 1.5rem;
+  }
+  .single {
+    padding: 2rem 1.25rem;
+  }
+  .flow {
+    padding: 1.3rem 1.25rem 1.5rem;
+  }
+  .pane,
+  .vcenter,
+  .center {
+    overflow-y: visible;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .divider {
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+    border-top: 2px dashed var(--hairline);
+    padding-top: 1.1rem;
+  }
+}

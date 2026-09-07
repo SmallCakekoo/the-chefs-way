@@ -1,0 +1,41 @@
+.wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.ribbon {
+  position: relative;
+  display: inline-block;
+  padding: 0.55rem 2rem;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--step-1);
+  letter-spacing: 0.005em;
+  color: var(--on-primary);
+  background: var(--primary);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 15px) 50%,
+    100% 100%,
+    0 100%,
+    15px 50%
+  );
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.secondary {
+  background: var(--secondary);
+  color: var(--on-secondary);
+}
+.yellow {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.forest {
+  background: var(--forest);
+  color: #fff;
+}

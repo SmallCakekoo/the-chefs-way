@@ -1,0 +1,37 @@
+.label {
+  align-self: flex-start;
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-radius: var(--r-pill);
+  padding: 0.32rem 0.8rem;
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+}
+.primary {
+  background: var(--primary-tint);
+  color: var(--primary-deep);
+}
+.ink {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.solidPrimary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.solidSecondary {
+  background: var(--secondary);
+  color: var(--on-secondary);
+}
+.solidYellow {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.solidForest {
+  background: var(--forest);
+  color: #fff;
+}

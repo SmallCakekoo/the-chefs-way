@@ -1,0 +1,59 @@
+.die {
+  align-self: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+.die svg {
+  width: 68px;
+  height: 68px;
+}
+.pip {
+  fill: var(--ink);
+}
+.empty {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.6rem;
+  color: var(--hairline);
+}
+
+.rolling {
+  animation: die-tumble 0.16s infinite ease-in-out;
+}
+@keyframes die-tumble {
+  0% {
+    rotate: -14deg;
+    scale: 0.9;
+  }
+  50% {
+    rotate: 14deg;
+    scale: 1.06;
+  }
+  100% {
+    rotate: -14deg;
+    scale: 0.9;
+  }
+}
+
+.settled {
+  animation: die-settle 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes die-settle {
+  0% {
+    scale: 1.25;
+    rotate: -8deg;
+  }
+  60% {
+    scale: 0.95;
+    rotate: 3deg;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
