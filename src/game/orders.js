@@ -1,14 +1,18 @@
-/* Pedidos. Llegan solos cada cierto tiempo (timer en GameContext).
-   Un pedido = plato + lista de ingredientes + checklist (por ingrediente:
-   null -> "yes" (chulito) -> "no" (equis) -> null). Lo marcan los demas. */
+/* Pedidos. Llegan solos cada cierto tiempo (timer en GameContext) y se
+   atienden UNO A LA VEZ (los demas quedan en cola). Un pedido =
+   frase del gato + plato + ingredientes + checklist (por ingrediente:
+   null -> "yes" (chulito) -> "no" (equis) -> null). Lo marcan los demas.
+   Cada pedido da PREP_MS para armar el memory analogo antes de empezar. */
 
-// Cada cuanto sale un pedido. El valor real lleva +-30% de azar.
 export const ORDER_INTERVALS = {
   fast: { label: "Rápido", ms: 15_000 },
   normal: { label: "Normal", ms: 30_000 },
   slow: { label: "Tranquilo", ms: 45_000 },
 };
 export const DEFAULT_INTERVAL = "normal";
+
+// Segundos para que la mesa arme el tablero de memoria al llegar el pedido.
+export const PREP_MS = 20_000;
 
 export function intervalMs(key) {
   const base = (ORDER_INTERVALS[key] || ORDER_INTERVALS[DEFAULT_INTERVAL]).ms;
@@ -23,15 +27,31 @@ export function humanInterval(key) {
 }
 
 // Platos: base obligatoria + extras posibles + peso (mas peso = sale mas).
-// La mayoria son taco / hamburguesa / sandwich; pocas ensaladas.
+// `pide`: como lo nombra el gato (diminutivo, tierno).
 const DISHES = [
-  { id: "taco", name: "Taco", base: ["taco", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla"], weight: 4 },
-  { id: "hamburguesa", name: "Hamburguesa", base: ["pan", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla", "huevo"], weight: 4 },
-  { id: "sandwich", name: "Sándwich", base: ["pan"], extras: ["huevo", "queso", "tomate", "lechuga", "pollo"], weight: 3 },
-  { id: "ensalada", name: "Ensalada", base: ["lechuga"], extras: ["tomate", "huevo", "queso", "aguacate", "pollo", "cebolla"], weight: 1 },
+  { id: "taco", name: "Taco", pide: "un taquito", base: ["taco", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla"], weight: 4 },
+  { id: "hamburguesa", name: "Hamburguesa", pide: "una hamburguesita", base: ["pan", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla", "huevo"], weight: 4 },
+  { id: "sandwich", name: "Sándwich", pide: "un sanduchito", base: ["pan"], extras: ["huevo", "queso", "tomate", "lechuga", "pollo"], weight: 3 },
+  { id: "ensalada", name: "Ensalada", pide: "una ensaladita", base: ["lechuga"], extras: ["tomate", "huevo", "queso", "aguacate", "pollo", "cebolla"], weight: 1 },
 ];
 
 const CATS = ["Michi", "Pelusa", "Manchas", "Nube", "Tomás", "Croqueta"];
+
+// Retratos del gato en public/cats/ (cat (1).jpg .. cat (32).jpg). Placeholders.
+const CAT_COUNT = 32;
+function catPortrait() {
+  const n = 1 + Math.floor(Math.random() * CAT_COUNT);
+  return `/cats/cat%20(${n}).jpg`;
+}
+
+// Frases del gato (máquina de escribir). Tiernas y educadas; nombran el plato.
+const LINES = [
+  (p) => `Holi… me gustaría ${p}, porfa. Con:`,
+  (p) => `Uy, hoy se me antoja ${p}. Lo quiero con:`,
+  (p) => `¿Me armas ${p}? Lo pido con:`,
+  (p) => `Buenas, quisiera ${p} si son tan amables. Con:`,
+  (p) => `Vengo con hambre… ${p}, por favor. Con:`,
+];
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -63,20 +83,25 @@ export function makeOrder(seq, players) {
 
   let assignees = [];
   if (players && players.length) {
-    const n = players.length > 2 && Math.random() < 0.4 ? 2 : 1;
+    const bag = [1, 1, 1, 2, 2, 3, 4]; // sesgado a 1-2
+    const n = Math.min(players.length, pick(bag));
     assignees = sample(players, n);
   }
 
+  const now = Date.now();
   return {
     id: `p${seq}`,
     num: seq,
     dish: dish.name,
+    line: pick(LINES)(dish.pide),
     cat: pick(CATS),
+    catImg: catPortrait(),
     assignees,
     items,
     check,
     status: "pending", // pending | done
-    createdAt: Date.now(),
+    createdAt: now,
+    prepUntil: now + PREP_MS,
   };
 }
 
@@ -85,16 +110,20 @@ export function makeFinaleOrder() {
   const items = ["pan", "carne", "queso", "tomate", "lechuga", "huevo"];
   const check = {};
   items.forEach((_, i) => (check[i] = null));
+  const now = Date.now();
   return {
     id: "finale",
     num: "★",
     dish: "Súper combo de la casa",
+    line: "Para cerrar el servicio: el súper combo de la casa. Con:",
     cat: pick(CATS),
+    catImg: catPortrait(),
     assignees: [],
     items,
     check,
     status: "pending",
-    createdAt: Date.now(),
+    createdAt: now,
+    prepUntil: now, // sin prep: la mesa ya está lista
     finale: true,
   };
 }

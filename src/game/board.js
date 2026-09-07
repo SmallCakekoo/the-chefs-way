@@ -1,7 +1,6 @@
-export const FINAL_SQUARE = 43;
-
 export const MAX_PLAYERS = 4;
 export const MIN_PLAYERS = 2;
+export const FINAL_NODE = "FIN";
 
 // Personajes-alimento (arte en public/alimentos/, PNG con carita, plano).
 // La escala de los PNG varia: encuadrar siempre con object-fit: contain.
@@ -20,29 +19,109 @@ export const CHARACTERS = [
 ];
 export const characterById = (id) =>
   CHARACTERS.find((c) => c.id === id) || CHARACTERS[0];
-
-// Compat: algunos sitios aun piden un color; lo derivamos del personaje.
 export const PALETTE = CHARACTERS.map((c) => c.tint);
 
-// Tipo de casilla por número (1-43). Semilla fija = tablero consistente
-// mientras el equipo confirma el mapa final.
-function seededBoard() {
-  let seed = 88;
-  const rand = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
-  };
-  const counts = { O: 15, A: 11, Y: 11, B: 6 };
-  const pool = [];
-  for (const k in counts) for (let i = 0; i < counts[k]; i++) pool.push(k);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool;
-}
+/* ============================================================
+   Grafo del tablero "The Chef's Way" — transcrito del mapa.
+   c: color/tipo · O naranja (libre) · A aguamarina (objeto +)
+                   · Y amarillo (evento) · B negro (objeto -)
+   next: nodos alcanzables. Con >1 nodo, la app pregunta la rama.
+   (Un visto bueno del equipo; faltan dos, pero se juega con este.)
+   ============================================================ */
+export const GRAPH = {
+  INICIO: { c: null, next: ["1"] },
+  "1": { c: "O", next: ["2"] },
+  "2": { c: "A", next: ["3a", "3b"] },
+  "3a": { c: "O", next: ["4a"] },
+  "3b": { c: "O", next: ["4b", "4a"] },
+  "4a": { c: "Y", next: ["5a"] },
+  "4b": { c: "B", next: ["5b"] },
+  "5a": { c: "O", next: ["6a"] },
+  "5b": { c: "A", next: ["7"] },
+  "6a": { c: "A", next: ["7"] },
+  "7": { c: "O", next: ["8"] },
+  "8": { c: "O", next: ["9"] },
+  "9": { c: "Y", next: ["10"] },
+  "10": { c: "Y", next: ["11"] },
+  "11": { c: "A", next: ["12"] },
+  "12": { c: "Y", next: ["13a", "13b"] },
+  "13a": { c: "B", next: ["14a"] },
+  "13b": { c: "B", next: ["14b"] },
+  "14a": { c: "Y", next: ["15a", "15c"] },
+  "14b": { c: "O", next: ["15b"] },
+  "15a": { c: "A", next: ["16a"] },
+  "15b": { c: "O", next: ["18"] },
+  "15c": { c: "A", next: ["17"] },
+  "16a": { c: "Y", next: ["17"] },
+  "17": { c: "O", next: ["18"] },
+  "18": { c: "A", next: ["19"] },
+  "19": { c: "Y", next: ["20a", "20b"] },
+  "20a": { c: "O", next: ["21"] },
+  "20b": { c: "B", next: ["22"] },
+  "21": { c: "O", next: ["22"] },
+  "22": { c: "A", next: ["23"] },
+  "23": { c: "A", next: ["24"] },
+  "24": { c: "O", next: ["25a", "25b"] },
+  "25a": { c: "Y", next: ["26a"] },
+  "25b": { c: "A", next: ["26b"] },
+  "26a": { c: "B", next: ["28a"] },
+  "26b": { c: "Y", next: ["27b", "27c"] },
+  "27b": { c: "A", next: ["28a"] },
+  "27c": { c: "B", next: ["28b"] },
+  "28a": { c: "B", next: ["29"] },
+  "28b": { c: "Y", next: ["29"] },
+  "29": { c: "O", next: ["30"] },
+  "30": { c: "A", next: ["31"] },
+  "31": { c: "O", next: ["32"] },
+  "32": { c: "O", next: ["33"] },
+  "33": { c: "B", next: ["34a", "34b"] },
+  "34a": { c: "O", next: ["35a"] },
+  "34b": { c: "B", next: ["35b"] },
+  "35a": { c: "A", next: ["36"] },
+  "35b": { c: "Y", next: ["FIN"] },
+  "36": { c: "O", next: ["37"] },
+  "37": { c: "Y", next: ["38"] },
+  "38": { c: "O", next: ["39"] },
+  "39": { c: "A", next: ["40"] },
+  "40": { c: "B", next: ["41"] },
+  "41": { c: "O", next: ["42"] },
+  "42": { c: "Y", next: ["43"] },
+  "43": { c: "A", next: ["FIN"] },
+  FIN: { c: null, next: [] },
+};
 
-export const BOARD = seededBoard();
+// ramas que son atajo (para la insignia "El atajero")
+export const SHORTCUT_NODES = new Set(["4b", "5b", "15b", "15c", "20b", "27b", "34b"]);
+
+// progreso (distancia mínima desde INICIO) para ordenar / "La tortuga"
+export const PROGRESS = (() => {
+  const dist = { INICIO: 0 };
+  const q = ["INICIO"];
+  while (q.length) {
+    const n = q.shift();
+    for (const m of GRAPH[n].next) {
+      if (dist[m] === undefined) {
+        dist[m] = dist[n] + 1;
+        q.push(m);
+      }
+    }
+  }
+  return dist;
+})();
+
+/** Avanza `steps` aristas desde `from`. Devuelve {at} o {branch,options,steps}. */
+export function advanceGraph(from, steps) {
+  let node = from;
+  let left = steps;
+  while (left > 0) {
+    const nx = GRAPH[node]?.next || [];
+    if (nx.length === 0) return { at: node };
+    if (nx.length > 1) return { branch: node, options: nx, steps: left };
+    node = nx[0];
+    left -= 1;
+  }
+  return { at: node };
+}
 
 export const CASILLA_INFO = {
   O: {
@@ -67,8 +146,7 @@ export const CASILLA_INFO = {
   },
 };
 
-// Eventos concretos para las casillas tipo Y (evento). Borrador para pruebas:
-// el equipo confirma el listado final contra las cartas fisicas.
+// Eventos concretos para las casillas tipo Y. Borrador: el equipo confirma.
 export const EVENTS = [
   { title: "Hora pico", text: "Llegan dos pedidos seguidos. El siguiente jugador tira dos veces." },
   { title: "Se cayó un plato", text: "El jugador con más casillas recorridas retrocede 2." },

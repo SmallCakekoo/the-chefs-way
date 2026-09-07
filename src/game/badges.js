@@ -1,5 +1,6 @@
 /* Insignias de fin de partida, estilo Counter-Strike: TODOS reciben una,
    no solo el ganador. Se reparten sin repetir. Borrador para desarrollo. */
+import { PROGRESS } from "./board.js";
 
 export const BADGES = [
   { id: "empleado-del-mes", icon: "queso", name: "Empleado del mes", desc: "Primero en llegar a FIN." },
@@ -49,7 +50,7 @@ export function awardBadges(order, posOf, finishOrder, perPlayer) {
     ["el-atajero", () => best((n) => pp(n).shortcuts || 0)],
     ["imán-de-eventos", () => best((n) => pp(n).events || 0)],
     ["con-suerte", () => best((n) => pp(n).sixes || 0)],
-    ["la-tortuga", () => best((n) => posOf?.[n] ?? 0, "min")],
+    ["la-tortuga", () => best((n) => PROGRESS[posOf?.[n]] ?? 0, "min")],
   ];
   for (const [id, pick] of rules) {
     if (used.has(id)) continue;

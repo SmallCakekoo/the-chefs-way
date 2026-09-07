@@ -2,8 +2,8 @@ import { useGame } from "../game/GameContext.jsx";
 import Screen from "../components/Screen.jsx";
 import SectionLabel from "../components/SectionLabel.jsx";
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
-import { CHARACTERS, CASILLA_INFO, EVENTS } from "../game/board.js";
-import { FORKS } from "../game/forks.js";
+import { CHARACTERS, CASILLA_INFO, EVENTS, GRAPH } from "../game/board.js";
+import { BRANCHES } from "../game/forks.js";
 import { ACHIEVEMENTS } from "../game/achievements.js";
 import { BADGES } from "../game/badges.js";
 import styles from "./DevRefScreen.module.css";
@@ -42,11 +42,19 @@ export default function DevRefScreen() {
       </section>
 
       <section className={styles.block}>
-        <SectionLabel tone="ink">Bifurcaciones</SectionLabel>
-        {Object.entries(FORKS).map(([sq, opts]) => (
-          <div key={sq} className={styles.row}>
-            <b>Casilla {sq}:</b>{" "}
-            {opts.map((o) => `${o.label} (omite ${o.omite || 0})`).join(" · ")}
+        <SectionLabel tone="ink">Bifurcaciones ({BRANCHES.length})</SectionLabel>
+        {BRANCHES.map((b) => (
+          <div key={b.from} className={styles.row}>
+            <b>Casilla {b.from}:</b> {b.options.join(" · ")}
+          </div>
+        ))}
+      </section>
+
+      <section className={styles.block}>
+        <SectionLabel tone="ink">Mapa ({Object.keys(GRAPH).length} nodos)</SectionLabel>
+        {Object.entries(GRAPH).map(([id, n]) => (
+          <div key={id} className={styles.row}>
+            <b>{id}</b> [{n.c || "—"}] → {n.next.join(", ") || "FIN"}
           </div>
         ))}
       </section>

@@ -46,7 +46,7 @@ export default function OrderTimer() {
 
       {pending > 0 && (
         <span className={styles.action}>
-          {pending} en marcha
+          {pending === 1 ? "1 pedido" : `${pending} en cola`}
         </span>
       )}
     </div>

@@ -6,7 +6,7 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { FINAL_SQUARE, MIN_PLAYERS, CHARACTERS } from "./board.js";
+import { FINAL_NODE, MIN_PLAYERS, CHARACTERS } from "./board.js";
 import { EMPTY_STATS } from "./achievements.js";
 import { intervalMs, makeOrder, makeFinaleOrder, DEFAULT_INTERVAL } from "./orders.js";
 import { awardBadges } from "./badges.js";
@@ -138,7 +138,7 @@ function reducer(state, action) {
       const finishedOf = {};
       const perPlayer = {};
       order.forEach((n) => {
-        posOf[n] = 0;
+        posOf[n] = "INICIO";
         finishedOf[n] = false;
         perPlayer[n] = { orders: 0, events: 0, shortcuts: 0, sixes: 0, rolls: 0 };
       });
@@ -203,7 +203,7 @@ function reducer(state, action) {
       let finishedOf = state.finishedOf;
       let finishOrder = state.finishOrder;
       let extra = {};
-      if (square >= FINAL_SQUARE && !state.finishedOf[name]) {
+      if (square === FINAL_NODE && !state.finishedOf[name]) {
         finishedOf = { ...state.finishedOf, [name]: true };
         finishOrder = [...state.finishOrder, name];
         // primero en llegar a FIN: la mesa entera cocina el super pedido

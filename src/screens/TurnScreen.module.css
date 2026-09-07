@@ -1,9 +1,39 @@
+.board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 1.4rem 2rem;
+  align-items: start;
+}
+
+.stage {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.split .stage {
+  width: 100%;
+  align-self: center;
+}
+
 .orders {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
 }
 .ordersHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-family: var(--font-body);
   font-weight: 800;
   font-size: 0.72rem;
@@ -11,16 +41,14 @@
   letter-spacing: 0.09em;
   color: var(--primary-deep);
 }
-
-.stage {
-  width: min(460px, 100%);
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-  margin: auto 0;
-  padding: 1rem 0;
+.queue {
+  font-weight: 800;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--on-primary);
+  background: var(--primary);
+  border-radius: var(--r-pill);
+  padding: 0.15rem 0.55rem;
 }
 
 .step {
@@ -41,8 +69,10 @@
 .hint {
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   color: var(--text-soft);
+  text-align: center;
+  max-width: 30ch;
 }
 
 .card {
@@ -90,7 +120,6 @@
   gap: 0.5rem;
   margin-top: 0.2rem;
 }
-
 .event {
   display: flex;
   flex-direction: column;
@@ -112,10 +141,17 @@
   line-height: 1.4;
   color: var(--ink-2);
 }
-
 .card > button {
   margin-top: 0.3rem;
 }
 .card > span:first-child {
   align-self: flex-start;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  .board.split {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
 }
