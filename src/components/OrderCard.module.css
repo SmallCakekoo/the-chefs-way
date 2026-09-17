@@ -262,7 +262,20 @@
   letter-spacing: 0.08em;
   color: var(--text-soft);
 }
+.checkMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
 .checkCount {
+  color: var(--primary-deep);
+}
+.dueLeft {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  cursor: help;
+}
+.dueUrgent {
   color: var(--primary-deep);
 }
 /* la lista es lo único que scrollea; cabecera y botón quedan fijos */

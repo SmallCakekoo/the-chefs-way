@@ -42,6 +42,13 @@
   color: var(--text-soft);
 }
 
+.right {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .action {
   flex: none;
   border: none;
@@ -57,6 +64,32 @@
 }
 .action:active {
   transform: scale(0.95);
+}
+
+/* moneditas del restaurante: bajan si un pedido se vence sin entregar */
+.coins {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: var(--r-pill);
+  background: var(--yellow-tint);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.35rem 0.7rem 0.35rem 0.55rem;
+  cursor: help;
+}
+.coin {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.coinsLow {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 @media (max-width: 900px), (orientation: portrait) {

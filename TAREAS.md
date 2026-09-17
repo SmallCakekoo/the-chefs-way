@@ -43,36 +43,49 @@ sesión de mapeo del tablero.
       ingredientes (`max-height: min(40vh,320px)` en `.checkList`); cabecera y
       botón "Marcar como entregado" quedan fijos. Con el checklist abierto se
       ocultan los chips del bocadillo (duplicaban la lista).
-- [x] Un pedido puede ser para 1, 2, 3 o 4 jugadores.
-- [x] **Se muestra un pedido a la vez**; los demás quedan en cola ("+N en cola").
+- [x] **Las 3 formas en que llega un pedido** (`spawnBatch()` en `orders.js`,
+      sorteo aleatorio en cada lote):
+      - **Solo** — un pedido para una sola persona.
+      - **Paralelo** — DOS pedidos a la vez, cada uno para una persona
+        distinta; los dos se ven en pantalla al mismo tiempo (ya no hay cola
+        oculta: `TurnScreen` pinta todos los pedidos pendientes, no solo uno).
+      - **Pareja** — un pedido para dos personas que lo hacen juntas.
 - [x] **Prep de 20 s** al llegar el pedido ("Armen el memory en la mesa · 0:20")
       antes de que se pueda usar el checklist (`PREP_MS` en `orders.js`).
-- [ ] **Prep + cola:** hoy el prep se cuenta desde que se *crea* el pedido. Si
-      hay cola, cuando por fin se muestra el pedido #N su prep ya venció y pasa
-      directo al checklist. Decidir si el prep debe arrancar cuando el pedido
-      pasa a ser el *activo* (el que se ve) — cambio pequeño en el reducer
-      (`shownAt`). Va ligado a los modos de juego.
-- [ ] **Prep vs. reloj del próximo pedido — decisión pendiente.** Hoy el reloj
-      de "próximo pedido" corre igual mientras la mesa está en el prep de 20 s.
-      Definir cuál de las dos:
-      - **(a) Sumarle el prep:** los 20 s de armar el memory se añaden al
-        tiempo del próximo pedido (se corre `nextOrderAt += PREP_MS`), o
-      - **(b) Pausar el reloj:** el contador de próximo pedido se congela
-        mientras dure el prep y se reanuda al terminar.
-      Ambas evitan que llegue un pedido nuevo encima mientras todavía están
-      colocando el tablero. Implementación en el efecto del timer de
-      `GameContext.jsx` + `nextOrderAt`.
-- [ ] **Modos de juego** — la usuaria quiere ~2 modos más además de la cadencia.
-      Idea: que Rápido/Normal/Tranquilo también ajusten el prep y la dificultad
-      (más jugadores por pedido, más ingredientes). Hoy el prep es fijo (20 s).
-- [ ] **Memory físico** — la app no lo modela (es de mesa). Falta decidir si
-      necesita algún apoyo en pantalla (temporizador, recordatorio).
-- [ ] **Puntaje por tiempo** — medir cuánto tardó cada pedido y que alimente la
-      quiebra del restaurante y el "empleado del mes". Hoy no se mide.
-- [ ] **Quiebra del restaurante** — no existe todavía ninguna barra/estado de
-      salud del local.
-- [ ] Definir qué pasa si un pedido no se entrega nunca (¿penalización?, ¿se
-      queda bloqueando el turno para siempre?).
+- [x] **El reloj del próximo pedido se PAUSA** mientras cualquier pedido esté en
+      su ventana de prep (se decidió la opción (b) que habíamos dejado
+      pendiente) — así nadie tiene que atender un pedido nuevo mientras arma el
+      memory. Implementado en el timer de `GameContext.jsx` con
+      `postponeNextOrder`; `OrderTimer` muestra "en pausa" en vez de la cuenta.
+- [x] **Cada pedido se vence solo si no se entrega a tiempo.** Ventana total =
+      `PREP_MS + ORDER_WORK_MS` (20 s + 40 s) desde que llega. Si se vence:
+      status pasa a "expired", desaparece de pantalla y **resta monedas**
+      (`COIN_PENALTY`). El checklist muestra "vence en m:ss" (se pone en rojo
+      los últimos 15 s).
+- [x] **Economía del restaurante (moneditas):** `coins` en el estado global,
+      arranca en `COIN_START` (100). Entregar a tiempo suma `COIN_REWARD` (+12);
+      dejar que un pedido se venza resta `COIN_PENALTY` (−18). Se ve en una
+      píldora junto al reloj de pedidos (`OrderTimer`), que se pone oscura/de
+      alerta con pocas monedas (≤30).
+- [x] **Quiebra del restaurante:** si las monedas llegan a 0 (o menos), la
+      partida termina ahí mismo (`bankruptGame()` en `GameContext.jsx`) y va a
+      la pantalla de resultados con la cinta "El restaurante quebró" en vez de
+      "Empleado del mes" (sin confeti). Las insignias de la mesa se siguen
+      mostrando.
+- [x] **Las moneditas SÍ pueden quedar en negativo.** Ya no se frenan en 0: si
+      el pedido que hace quebrar el restaurante las manda por debajo (p.ej.
+      10 − 18 = −8), ese número negativo es el que se guarda y se muestra en
+      la pantalla de resultados ("−8 moneditas · Balance final del
+      restaurante").
+- [ ] **Modos de juego** — sigue pendiente la idea de ~2 modos más además de la
+      cadencia (Rápido/Normal/Tranquilo). Podrían ajustar además el prep, la
+      ventana de vencimiento y qué tan seguido sale "paralelo"/"pareja".
+- [ ] **Memory físico** — la app no lo modela (es de mesa); sigue siendo solo
+      el temporizador de 20 s en pantalla.
+- [ ] **Afinar los números de la economía** con una partida real: ¿100 monedas
+      iniciales, +12/−18, 40 s de ventana, se sienten bien o hay que subir/
+      bajarlos? Todo vive en constantes al inicio de `orders.js`
+      (`COIN_START`, `COIN_REWARD`, `COIN_PENALTY`, `ORDER_WORK_MS`).
 
 ## 3. Fin de partida
 
@@ -135,6 +148,7 @@ sesión de mapeo del tablero.
 - [ ] `firstForkInPath` / `FORKS` viejos quedaron reemplazados por el grafo;
       revisar que no quede código muerto.
 - [ ] Tests: no hay ninguno. Al menos cubrir `advanceGraph` (recorrido del mapa
-      con bifurcaciones) y `awardBadges`.
+      con bifurcaciones), `awardBadges` y `spawnBatch` (que reparta bien los
+      modos solo/paralelo/pareja y no repita jugador en "paralelo").
 - [ ] `src/game/board.js` es la fuente de verdad del tablero; mantenerlo
       sincronizado con el mapa físico.

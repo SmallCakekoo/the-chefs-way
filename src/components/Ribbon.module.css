@@ -39,3 +39,7 @@
   background: var(--forest);
   color: #fff;
 }
+.ink {
+  background: var(--ink);
+  color: var(--paper);
+}

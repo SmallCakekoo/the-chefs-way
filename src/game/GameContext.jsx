@@ -8,7 +8,15 @@ import {
 } from "react";
 import { FINAL_NODE, MIN_PLAYERS, CHARACTERS } from "./board.js";
 import { EMPTY_STATS } from "./achievements.js";
-import { intervalMs, makeOrder, makeFinaleOrder, DEFAULT_INTERVAL } from "./orders.js";
+import {
+  intervalMs,
+  spawnBatch,
+  makeFinaleOrder,
+  DEFAULT_INTERVAL,
+  COIN_START,
+  COIN_REWARD,
+  COIN_PENALTY,
+} from "./orders.js";
 import { awardBadges } from "./badges.js";
 import { sfx, setSfxEnabled, setHapticsEnabled } from "../lib/sfx.js";
 import { setMusicEnabled, setMusicVolume, armMusic } from "../lib/music.js";
@@ -82,6 +90,8 @@ function makeInitial() {
     nextOrderAt: null,
     perPlayer: {},
     badges: null,
+    coins: COIN_START,
+    bankrupt: false,
     ...p,
   };
 }
@@ -111,6 +121,30 @@ function finishGame(state) {
     badges,
     statsAwarded: true,
     nextOrderAt: null,
+    route: "results",
+  };
+}
+
+// Las monedas llegaron a 0: se acaba la partida por quiebra, no por llegar
+// a FIN. Reusa la pantalla de resultados con `bankrupt: true`.
+function bankruptGame(state) {
+  const badges = awardBadges(
+    state.order,
+    state.posOf,
+    state.finishOrder,
+    state.perPlayer
+  );
+  let stats = state.stats;
+  if (!state.statsAwarded) {
+    stats = { ...stats, gamesPlayed: stats.gamesPlayed + 1 };
+  }
+  return {
+    ...state,
+    stats,
+    badges,
+    statsAwarded: true,
+    nextOrderAt: null,
+    bankrupt: true,
     route: "results",
   };
 }
@@ -156,6 +190,8 @@ function reducer(state, action) {
         orderSeq: 0,
         perPlayer,
         badges: null,
+        coins: COIN_START,
+        bankrupt: false,
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
         stats: { ...state.stats, gamesHosted: state.stats.gamesHosted + 1 },
         route: "turn",
@@ -245,18 +281,42 @@ function reducer(state, action) {
         nextOrderAt: null,
         perPlayer: {},
         badges: null,
+        coins: COIN_START,
+        bankrupt: false,
         route: "menu",
       };
 
-    case "spawnOrder": {
+    case "spawnOrders": {
       if (!state.nextOrderAt) return state;
-      const seq = state.orderSeq + 1;
+      const batch = spawnBatch(state.orderSeq, state.order);
       return {
         ...state,
-        orders: [...state.orders, makeOrder(seq, state.order)],
-        orderSeq: seq,
+        orders: [...state.orders, ...batch.orders],
+        orderSeq: batch.seq,
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
       };
+    }
+
+    // el prep de otro pedido esta corriendo: el reloj del proximo pedido
+    // no avanza (se empuja hacia adelante lo mismo que paso el tiempo real).
+    case "postponeNextOrder":
+      if (!state.nextOrderAt) return state;
+      return { ...state, nextOrderAt: state.nextOrderAt + action.ms };
+
+    // un pedido se vencio sin entregarse: le pega al restaurante.
+    case "expireOrder": {
+      const target = state.orders.find(
+        (o) => o.id === action.id && o.status === "pending"
+      );
+      if (!target) return state;
+      const orders = state.orders.map((o) =>
+        o.id === action.id ? { ...o, status: "expired" } : o
+      );
+      // sin clamp: el ultimo pedido que las hace quebrar puede dejarlas en
+      // negativo (p.ej. 10 monedas - 18 = -8), se muestra tal cual en el cierre.
+      const coins = state.coins - COIN_PENALTY;
+      const next = { ...state, orders, coins };
+      return coins <= 0 ? bankruptGame(next) : next;
     }
 
     case "setOrderCheck": {
@@ -294,7 +354,9 @@ function reducer(state, action) {
       if (target?.finale) {
         return finishGame({ ...state, orders, perPlayer });
       }
-      return { ...state, orders, perPlayer };
+      // entregado a tiempo: unas moneditas para el restaurante
+      const coins = state.coins + COIN_REWARD;
+      return { ...state, orders, perPlayer, coins };
     }
 
     case "setSetting":
@@ -380,15 +442,55 @@ export function GameProvider({ children }) {
     prevOrderCount.current = state.orders.length;
   }, [state.orders.length, inGame]);
 
-  // timer de pedidos: solo corre en pantallas de partida. Al salir al menu
-  // deja de soltar pedidos (y por tanto de sonar).
+  // un pedido se vencio (bajaron las monedas sin que fuera por entrega):
+  // aviso sonoro/haptico, respeta los toggles de sonido.
+  const prevCoins = useRef(state.coins);
   useEffect(() => {
-    if (!state.nextOrderAt || !inGame) return;
+    if (state.coins < prevCoins.current && inGame) sfx.expire();
+    prevCoins.current = state.coins;
+  }, [state.coins, inGame]);
+
+  // timer de pedidos: solo corre en pantallas de partida. Cada segundo:
+  // 1) vence los pedidos cuyo `dueAt` ya paso (le pega al restaurante),
+  // 2) si algun pedido pendiente sigue en su ventana de prep, PAUSA el
+  //    reloj del proximo pedido (lo empuja lo que avanzo el tiempo real),
+  // 3) si no, y ya toca, suelta el proximo lote.
+  // Usa un ref para leer el estado mas fresco sin reiniciar el intervalo
+  // en cada cambio de `orders` (el checklist los muta todo el tiempo).
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(() => {
+    if (!inGame) return;
+    let last = Date.now();
     const id = setInterval(() => {
-      if (Date.now() >= state.nextOrderAt) dispatch({ type: "spawnOrder" });
+      const s = stateRef.current;
+      const now = Date.now();
+      const delta = now - last;
+      last = now;
+
+      s.orders.forEach((o) => {
+        if (o.status === "pending" && !o.finale && o.dueAt && now >= o.dueAt) {
+          dispatch({ type: "expireOrder", id: o.id });
+        }
+      });
+
+      const anyPrep = s.orders.some(
+        (o) =>
+          o.status === "pending" &&
+          !o.finale &&
+          o.prepUntil &&
+          now < o.prepUntil
+      );
+      if (anyPrep) {
+        if (s.nextOrderAt) dispatch({ type: "postponeNextOrder", ms: delta });
+        return;
+      }
+      if (s.nextOrderAt && now >= s.nextOrderAt) {
+        dispatch({ type: "spawnOrders" });
+      }
     }, 1000);
     return () => clearInterval(id);
-  }, [state.nextOrderAt, inGame]);
+  }, [inGame]);
 
   const value = useMemo(() => {
     const currentName = state.order[state.turnIdx];

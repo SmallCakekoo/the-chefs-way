@@ -1,8 +1,15 @@
-/* Pedidos. Llegan solos cada cierto tiempo (timer en GameContext) y se
-   atienden UNO A LA VEZ (los demas quedan en cola). Un pedido =
-   frase del gato + plato + ingredientes + checklist (por ingrediente:
-   null -> "yes" (chulito) -> "no" (equis) -> null). Lo marcan los demas.
-   Cada pedido da PREP_MS para armar el memory analogo antes de empezar. */
+/* Pedidos. Llegan en lotes (timer en GameContext), de 3 formas posibles:
+   - "solo": un pedido para una sola persona.
+   - "paralelo": dos pedidos A LA VEZ, cada uno para una persona distinta
+     (los dos se ven en pantalla al mismo tiempo, no hay cola oculta).
+   - "pareja": un pedido para dos personas que lo hacen juntas.
+   Cada pedido = frase del gato + plato + ingredientes + checklist (por
+   ingrediente: null -> "yes" (chulito) -> "no" (equis) -> null). Lo marcan
+   los demas. Da PREP_MS para armar el memory analogo antes de que se pueda
+   usar el checklist, y un total de PREP_MS + ORDER_WORK_MS antes de vencerse
+   (si se vence sin entregar, resta monedas: eso es lo que puede quebrar el
+   restaurante). Mientras algun pedido esta en su ventana de prep, el reloj
+   del PROXIMO pedido se pausa (ver timer en GameContext). */
 
 export const ORDER_INTERVALS = {
   fast: { label: "Rápido", ms: 15_000 },
@@ -13,6 +20,17 @@ export const DEFAULT_INTERVAL = "normal";
 
 // Segundos para que la mesa arme el tablero de memoria al llegar el pedido.
 export const PREP_MS = 20_000;
+
+// Tiempo extra (despues del prep) para completar el checklist antes de que
+// el pedido se venza solo. Total desde que llega = PREP_MS + ORDER_WORK_MS.
+export const ORDER_WORK_MS = 40_000;
+
+// Economia del restaurante: monedas iniciales, premio por entregar a tiempo,
+// castigo por dejar que un pedido se venza. Si las monedas llegan a 0, el
+// restaurante quiebra y se acaba la partida.
+export const COIN_START = 100;
+export const COIN_REWARD = 12;
+export const COIN_PENALTY = 18;
 
 export function intervalMs(key) {
   const base = (ORDER_INTERVALS[key] || ORDER_INTERVALS[DEFAULT_INTERVAL]).ms;
@@ -73,22 +91,14 @@ function sample(arr, n) {
   return out;
 }
 
-/** Crea un pedido. `players` = nombres para asignar quien(es) lo hacen. */
-export function makeOrder(seq, players) {
+/** Construye UN pedido ya con sus asignados (`assignees`) decididos. */
+function buildOrder(seq, now, assignees) {
   const dish = pickWeighted(DISHES);
   const nExtras = 1 + Math.floor(Math.random() * 3); // 1..3
   const items = [...dish.base, ...sample(dish.extras, nExtras)];
   const check = {};
   items.forEach((_, i) => (check[i] = null));
 
-  let assignees = [];
-  if (players && players.length) {
-    const bag = [1, 1, 1, 2, 2, 3, 4]; // sesgado a 1-2
-    const n = Math.min(players.length, pick(bag));
-    assignees = sample(players, n);
-  }
-
-  const now = Date.now();
   return {
     id: `p${seq}`,
     num: seq,
@@ -99,10 +109,39 @@ export function makeOrder(seq, players) {
     assignees,
     items,
     check,
-    status: "pending", // pending | done
+    status: "pending", // pending | done | expired
     createdAt: now,
     prepUntil: now + PREP_MS,
+    dueAt: now + PREP_MS + ORDER_WORK_MS,
   };
+}
+
+// Las 3 formas en que puede llegar un lote de pedidos.
+const SPAWN_MODES = ["solo", "paralelo", "pareja"];
+
+/** Genera el siguiente lote de pedidos (1 o 2, segun la forma sorteada).
+ *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa.
+ *  Devuelve { orders, seq } con el nuevo contador. */
+export function spawnBatch(seq, players) {
+  const now = Date.now();
+  const mode = players.length >= 2 ? pick(SPAWN_MODES) : "solo";
+  let n = seq;
+
+  if (mode === "paralelo") {
+    const [a, b] = sample(players, 2);
+    const o1 = buildOrder(++n, now, [a]);
+    const o2 = buildOrder(++n, now, [b]);
+    return { orders: [o1, o2], seq: n, mode };
+  }
+  if (mode === "pareja") {
+    const pair = sample(players, Math.min(2, players.length));
+    const o = buildOrder(++n, now, pair);
+    return { orders: [o], seq: n, mode };
+  }
+  // solo
+  const [a] = sample(players, 1);
+  const o = buildOrder(++n, now, a ? [a] : []);
+  return { orders: [o], seq: n, mode };
 }
 
 /* El super pedido grupal del final: lo cocina TODA la mesa al llegar a FIN. */

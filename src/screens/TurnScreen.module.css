@@ -9,7 +9,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   gap: 1.4rem 2rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .stage {
@@ -26,11 +26,13 @@
 
 .orders {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
 }
 .ordersHead {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -41,14 +43,18 @@
   letter-spacing: 0.09em;
   color: var(--primary-deep);
 }
-.queue {
-  font-weight: 800;
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
-  color: var(--on-primary);
-  background: var(--primary);
-  border-radius: var(--r-pill);
-  padding: 0.15rem 0.55rem;
+/* si hay mas de un pedido a la vez (modo "paralelo"), la lista scrollea
+   por dentro en vez de empujar toda la pantalla hacia abajo */
+.ordersList {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.2rem;
+  margin-right: -0.2rem;
 }
 
 .step {
@@ -153,5 +159,9 @@
     display: flex;
     flex-direction: column;
     gap: 1.1rem;
+  }
+  .ordersList {
+    flex: none;
+    overflow-y: visible;
   }
 }
