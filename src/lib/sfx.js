@@ -92,4 +92,10 @@ export const sfx = {
     setTimeout(() => blip(784, 0.18, "triangle", 0.05), 180);
     buzz([20, 40, 60]);
   },
+  // Un pedido se vencio sin entregarse: le pega al restaurante.
+  expire: () => {
+    blip(320, 0.16, "sawtooth", 0.045);
+    setTimeout(() => blip(220, 0.22, "sawtooth", 0.045), 110);
+    buzz([25, 40]);
+  },
 };

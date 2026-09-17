@@ -11,32 +11,57 @@ import { sfx } from "../lib/sfx.js";
 import styles from "./ResultsScreen.module.css";
 
 export default function ResultsScreen() {
-  const { players, finishOrder, badges, dispatch, navigate } = useGame();
+  const { players, finishOrder, badges, bankrupt, coins, dispatch, navigate } =
+    useGame();
   const byName = (n) => players.find((p) => p.name === n) || { name: n };
   const winner = finishOrder[0] ? byName(finishOrder[0]) : null;
   const list = badges || [];
 
   useEffect(() => {
-    sfx.win();
-  }, []);
+    if (!bankrupt) sfx.win();
+  }, [bankrupt]);
 
   return (
     <Screen layout="panes">
-      <Confetti />
+      {!bankrupt && <Confetti />}
       <Pane>
-        <Ribbon tone="yellow">Empleado del mes</Ribbon>
-        {winner && (
-          <div className={styles.winner}>
-            <CharacterAvatar id={winner.characterId} size="lg" />
+        {bankrupt ? (
+          <Ribbon tone="ink">El restaurante quebró</Ribbon>
+        ) : (
+          <Ribbon tone="yellow">Empleado del mes</Ribbon>
+        )}
+        {bankrupt ? (
+          <div className={styles.finalCoins}>
+            <svg className={styles.coinIcon} viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M12 8.3v7.4M9.9 15c.3.7 1.1 1.1 2.1 1.1 1.4 0 2.3-.7 2.3-1.7 0-1.1-1-1.4-2.3-1.7-1.3-.3-2.3-.7-2.3-1.7 0-1 .9-1.7 2.3-1.7 1 0 1.8.4 2.1 1.1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
             <div>
-              <p className={styles.winnerName}>{winner.name}</p>
-              <BodyText align="left">Primero en llegar a FIN</BodyText>
+              <p className={styles.winnerName}>{coins} moneditas</p>
+              <BodyText align="left">Balance final del restaurante</BodyText>
             </div>
           </div>
+        ) : (
+          winner && (
+            <div className={styles.winner}>
+              <CharacterAvatar id={winner.characterId} size="lg" />
+              <div>
+                <p className={styles.winnerName}>{winner.name}</p>
+                <BodyText align="left">Primero en llegar a FIN</BodyText>
+              </div>
+            </div>
+          )
         )}
         <BodyText align="left" className={styles.note}>
-          Todos cierran el servicio con una insignia, como en un partido: no solo
-          gana quien llega primero.
+          {bankrupt
+            ? "Se acabaron las moneditas: demasiados pedidos se vencieron antes de entregarse. Así cerró el servicio cada quien:"
+            : "Todos cierran el servicio con una insignia, como en un partido: no solo gana quien llega primero."}
         </BodyText>
         <div className={styles.actions}>
           <Button

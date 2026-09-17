@@ -14,6 +14,29 @@
   margin: 0;
   color: var(--text);
 }
+.finalCoins {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+.finalCoins .winnerName {
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+.finalCoins p {
+  color: var(--paper);
+  opacity: 0.72;
+}
+.coinIcon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--paper);
+}
 .note {
   color: var(--text-soft);
 }

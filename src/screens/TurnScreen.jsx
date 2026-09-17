@@ -186,14 +186,13 @@ export default function TurnScreen() {
         {twoCol && (
           <div className={styles.orders}>
             <span className={styles.ordersHead}>
-              Pedido en marcha
-              {pendingOrders.length > 1 && (
-                <span className={styles.queue}>
-                  +{pendingOrders.length - 1} en cola
-                </span>
-              )}
+              {pendingOrders.length > 1 ? "Pedidos en marcha" : "Pedido en marcha"}
             </span>
-            <OrderCard key={pendingOrders[0].id} order={pendingOrders[0]} defaultOpen />
+            <div className={styles.ordersList}>
+              {pendingOrders.map((o) => (
+                <OrderCard key={o.id} order={o} defaultOpen />
+              ))}
+            </div>
           </div>
         )}
       </div>

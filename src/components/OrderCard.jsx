@@ -34,13 +34,17 @@ export default function OrderCard({ order: o, defaultOpen = false }) {
   const [now, setNow] = useState(Date.now());
   const prepLeft = (o.prepUntil || 0) - now;
   const inPrep = prepLeft > 0;
+  const dueLeft = o.dueAt ? o.dueAt - now : null;
+  const urgent = dueLeft != null && dueLeft < 15_000;
   const [open, setOpen] = useState(defaultOpen);
 
+  // sigue el reloj mientras haya algo que contar: el prep, o el vencimiento
+  // del pedido (se apaga solo cuando el pedido se entrega/vence y desaparece).
   useEffect(() => {
-    if (!inPrep) return;
+    if (!inPrep && !o.dueAt) return;
     const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
-  }, [inPrep]);
+  }, [inPrep, o.dueAt]);
 
   const charFor = (name) =>
     players.find((p) => p.name === name)?.characterId || "queso";
@@ -118,9 +122,19 @@ export default function OrderCard({ order: o, defaultOpen = false }) {
           {open && (
             <div className={styles.checklist}>
               <span className={styles.checkHead}>
-                Checklist · lo marcan los demás
-                <span className={styles.checkCount}>
-                  {marked}/{o.items.length}
+                <span>Checklist · lo marcan los demás</span>
+                <span className={styles.checkMeta}>
+                  {dueLeft != null && (
+                    <span
+                      className={`${styles.dueLeft} ${urgent ? styles.dueUrgent : ""}`}
+                      title="Si se vence sin entregar, el restaurante pierde moneditas"
+                    >
+                      vence en {mmss(Math.max(0, dueLeft))}
+                    </span>
+                  )}
+                  <span className={styles.checkCount}>
+                    {marked}/{o.items.length}
+                  </span>
                 </span>
               </span>
               <ul className={styles.checkList}>
