@@ -1,21 +1,51 @@
+import { useEffect, useState } from "react";
 import { useGame } from "../game/GameContext.jsx";
-import Screen from "../components/Screen.jsx";
-import CharacterAvatar from "../components/CharacterAvatar.jsx";
-import { characterById } from "../game/board.js";
-import { evaluate } from "../game/achievements.js";
 import { sfx } from "../lib/sfx.js";
+import { BASE, fitScale } from "./menuAssets.js";
 import styles from "./MenuScreen.module.css";
 
+// Botones: mismas posiciones que en el montaje (finalidea.svg).
+const BTN_X = 145.3;
+const BTN_Y = 163.3;
+const BTN_STEP = 157.63;
 const ENTRIES = [
-  { key: "rules", label: "Cómo se juega", hint: "Reglas, casillas y pedidos", tint: "yellow", char: "taco" },
-  { key: "profile", label: "Perfil", hint: "Tu chef y tus logros", tint: "teal", char: "huevo" },
-  { key: "settings", label: "Ajustes", hint: "Sonido, tema y cadencia", tint: "paper", char: "aguacate" },
+  { key: "play", label: "Jugar" },
+  { key: "rules", label: "Tutorial" },
+  { key: "profile", label: "Perfil" },
+  { key: "settings", label: "Config" },
 ];
 
+// Objetos: [clase, archivo, x, y, ancho, alto, transformación]. Se pintan en este orden, sobre la olla.
+const PROPS = [
+  ["salt1", "salt1.svg", 251.56, 838, 116, 144],
+  ["salt2", "salt2.svg", 396.42, 816, 169, 180],
+  ["board", "cuttingtable.svg", 637.35, 815.4, 510, 181],
+  ["knife", "knife.svg", 813, 801, 299, 154],
+  ["plant", "plant1.svg", 1187, 854, 164, 148],
+  ["plant plantB", "plant1.svg", 1606, 767, 164, 148, "scaleX(-1) rotate(-10deg) scale(1.08)"],
+  ["spoon", "spoon.svg", 1392.5, 862.5, 396, 130],
+];
+
+function useStageScale() {
+  const [scale, setScale] = useState(fitScale);
+  useEffect(() => {
+    const onResize = () => setScale(fitScale());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return scale;
+}
+
 export default function MenuScreen() {
-  const { navigate, dispatch, finishOrder, profile, stats } = useGame();
-  const achievements = evaluate(stats);
-  const unlocked = achievements.filter((a) => a.unlocked).length;
+  const { navigate, dispatch } = useGame();
+  const scale = useStageScale();
+  const [active, setActive] = useState(null);
+  const [playing, setPlaying] = useState({});
+
+  const poke = (name) => {
+    sfx.tap();
+    setPlaying((p) => ({ ...p, [name]: (p[name] || 0) + 1 }));
+  };
 
   const go = (key) => {
     sfx.tap();
@@ -28,75 +58,101 @@ export default function MenuScreen() {
   };
 
   return (
-    <Screen layout="flow">
-      <div className={styles.grid}>
-        {/* --- panel principal --- */}
-        <section className={styles.hero}>
-          <span className={styles.kicker}>Un dispositivo · por turnos</span>
-          <h1 className={styles.title}>La cocina te espera, chef</h1>
-          <p className={styles.sub}>
-            Arma la partida, pásense el dispositivo y cooperen para que el
-            restaurante no quiebre. Solo uno se lleva el puesto de empleado del
-            mes.
-          </p>
+    <main
+      className={styles.root}
+      style={{ "--s": scale, "--check": `${113.34 * scale}px` }}
+    >
+      <div className={styles.stage}>
+        <img
+          className={styles.prop}
+          src={BASE + "table.svg"}
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+          style={{ left: -9.07, top: 841, width: 2055, height: 607 }}
+        />
 
-          <div className={styles.ctaWrap}>
-            <button className={styles.cta} onClick={() => go("play")}>
-              Jugar · nueva partida
-            </button>
-            <span className={styles.ctaNote}>2 a 4 chefs</span>
+        {/* logo + olla (por detrás de las plantas y la cuchara) */}
+        <div className={styles.logo}>
+          <div
+            key={"l" + (playing.pot || 0) + "-" + (playing.flame || 0)}
+            className={`${styles.logoInner} ${playing.pot ? styles.hop : ""} ${playing.flame ? styles.shake : ""}`}
+          >
+            <img src={BASE + "logo.svg"} alt="The Chef's Way" draggable="false" />
+            <span className={`${styles.eye} ${styles.eyeL}`} aria-hidden="true" />
+            <span className={`${styles.eye} ${styles.eyeR}`} aria-hidden="true" />
           </div>
-
-          <img
-            className={`${styles.deco} ${styles.deco1}`}
-            src={characterById("pollo").src}
-            alt=""
-            aria-hidden="true"
+          <button
+            className={`${styles.hit} ${styles.hitFlame}`}
+            aria-label="Llama"
+            onClick={() => poke("flame")}
           />
-          <img
-            className={`${styles.deco} ${styles.deco2}`}
-            src={characterById("cebolla").src}
-            alt=""
-            aria-hidden="true"
+          <button
+            className={`${styles.hit} ${styles.hitPot}`}
+            aria-label="Olla"
+            onClick={() => poke("pot")}
           />
-        </section>
+        </div>
 
-        {/* --- barra lateral --- */}
-        <aside className={styles.rail}>
-          {ENTRIES.map((e) => (
+        {PROPS.map(([cls, file, x, y, w, h, tf], i) => {
+          const name = cls.split(" ")[0] + (cls.includes("plantB") ? "B" : "");
+          const isKnife = name === "knife";
+          // el cuchillo va sobre la tabla: cuando la tabla rebota, se lo lleva
+          const imgClass = playing[name]
+            ? styles.play
+            : isKnife && playing.board
+              ? styles.carry
+              : "";
+          return (
+            <div
+              key={name}
+              className={`${styles.obj} ${cls.split(" ").map((c) => styles[c]).join(" ")}`}
+              style={{ "--i": i, left: x, top: y, width: w, height: h, transform: tf }}
+            >
+              <img
+                key={(playing[name] || 0) + "-" + (isKnife ? playing.board || 0 : 0)}
+                className={imgClass}
+                src={BASE + file}
+                alt=""
+                draggable="false"
+                onClick={isKnife ? undefined : () => poke(name)}
+              />
+              {isKnife && (
+                <span className={styles.knifeHit} onClick={() => poke("knife")} />
+              )}
+            </div>
+          );
+        })}
+
+        {/* menú */}
+        <nav
+          className={styles.menu}
+          aria-label="Menú principal"
+          onPointerLeave={() => setActive(null)}
+        >
+          {ENTRIES.map((e, i) => (
             <button
               key={e.key}
-              className={`${styles.entry} ${styles["t_" + e.tint]}`}
+              className={styles.btn}
+              style={{ "--i": i, left: BTN_X, top: BTN_Y + i * BTN_STEP }}
               onClick={() => go(e.key)}
+              onPointerEnter={() => setActive(i)}
+              onFocus={() => setActive(i)}
+              onBlur={() => setActive(null)}
             >
-              <span className={styles.entryText}>
-                <span className={styles.entryLabel}>{e.label}</span>
-                <span className={styles.entryHint}>{e.hint}</span>
-              </span>
+              <img src={BASE + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
+              <span className={styles.label}>{e.label}</span>
               <img
-                className={styles.entryChar}
-                src={characterById(e.char).src}
+                className={`${styles.pointer} ${active === i ? styles.pointerOn : ""}`}
+                src={BASE + "pointer.svg"}
                 alt=""
                 aria-hidden="true"
+                draggable="false"
               />
-              <span className={styles.chev} aria-hidden="true">
-                ›
-              </span>
             </button>
           ))}
-
-          <div className={styles.summary}>
-            <CharacterAvatar id={profile.characterId} size="sm" />
-            <span className={styles.summaryText}>
-              <strong>{profile.name}</strong>
-              <span>
-                Logros {unlocked}/{achievements.length}
-                {finishOrder.length > 0 && ` · última: ${finishOrder[0]}`}
-              </span>
-            </span>
-          </div>
-        </aside>
+        </nav>
       </div>
-    </Screen>
+    </main>
   );
 }

@@ -1,17 +1,18 @@
+import { Suspense, lazy } from "react";
 import { GameProvider, useGame } from "./game/GameContext.jsx";
 import AppFrame from "./components/AppFrame.jsx";
 
 import LoginScreen from "./screens/LoginScreen.jsx";
 import MenuScreen from "./screens/MenuScreen.jsx";
-import OnboardingScreen from "./screens/OnboardingScreen.jsx";
-import RegisterScreen from "./screens/RegisterScreen.jsx";
-import TurnScreen from "./screens/TurnScreen.jsx";
-import FinaleScreen from "./screens/FinaleScreen.jsx";
-import ResultsScreen from "./screens/ResultsScreen.jsx";
-import RulesScreen from "./screens/RulesScreen.jsx";
-import DevRefScreen from "./screens/DevRefScreen.jsx";
-import ProfileScreen from "./screens/ProfileScreen.jsx";
-import SettingsScreen from "./screens/SettingsScreen.jsx";
+const OnboardingScreen = lazy(() => import("./screens/OnboardingScreen.jsx"));
+const RegisterScreen = lazy(() => import("./screens/RegisterScreen.jsx"));
+const TurnScreen = lazy(() => import("./screens/TurnScreen.jsx"));
+const FinaleScreen = lazy(() => import("./screens/FinaleScreen.jsx"));
+const ResultsScreen = lazy(() => import("./screens/ResultsScreen.jsx"));
+const RulesScreen = lazy(() => import("./screens/RulesScreen.jsx"));
+const DevRefScreen = lazy(() => import("./screens/DevRefScreen.jsx"));
+const ProfileScreen = lazy(() => import("./screens/ProfileScreen.jsx"));
+const SettingsScreen = lazy(() => import("./screens/SettingsScreen.jsx"));
 
 const SCREENS = {
   login: LoginScreen,
@@ -33,9 +34,13 @@ function Router() {
   // La pantalla de turno se remonta cada turno (turnNo) para resetear su
   // estado local aunque le toque al mismo jugador.
   const key = route === "turn" ? `turn-${turnNo}` : route;
+  // El menú es un montaje a pantalla completa, sin el marco de tablet.
+  if (route === "menu" || route === "login") return <Active key={key} />;
   return (
     <AppFrame>
-      <Active key={key} />
+      <Suspense fallback={null}>
+        <Active key={key} />
+      </Suspense>
     </AppFrame>
   );
 }
