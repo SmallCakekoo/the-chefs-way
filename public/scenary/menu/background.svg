@@ -1,0 +1,19 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g clip-path="url(#clip0_446_322)">
+<rect width="1920" height="1080" fill="#FFF2EC"/>
+<rect opacity="0.8" width="1927" height="1080" fill="url(#pattern0_446_322)"/>
+</g>
+<defs>
+<clipPath id="clip0_446_322">
+<rect width="1920" height="1080" fill="white"/>
+</clipPath>
+<pattern id="pattern0_446_322" patternUnits="userSpaceOnUse" patternTransform="matrix(113.339 0 0 113.339 -1.13339 -1.13339)" preserveAspectRatio="none" viewBox="-1 -1 100 100" width="1" height="1">
+<use xlink:href="#pattern0_446_322_inner" transform="translate(-100 -100)"/>
+<use xlink:href="#pattern0_446_322_inner" transform="translate(0 -100)"/>
+<use xlink:href="#pattern0_446_322_inner" transform="translate(-100 0)"/>
+<g id="pattern0_446_322_inner">
+<path d="M0 0H50V50H0V0Z" fill="#97CCF9"/>
+<path d="M50 50H100V100H50V50Z" fill="#97CCF9"/>
+</g>
+</pattern></defs>
+</svg>

@@ -1,253 +1,283 @@
-.grid {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 1.2rem;
-}
-
-/* ---------- panel principal ---------- */
-.hero {
-  position: relative;
+/* Menú principal: lienzo de diseño 1920x1080 escalado con --s (PC y tablet horizontal). */
+.root {
+  position: fixed;
+  inset: 0;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 1.9rem 2rem;
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 2.5px var(--ink);
-}
-.kicker {
-  align-self: flex-start;
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--primary-deep);
-  background: var(--primary-tint);
-  border-radius: var(--r-pill);
-  padding: 0.32rem 0.8rem;
-}
-.title {
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  margin: 0.9rem 0 0;
-  max-width: 12ch;
-  position: relative;
-  z-index: 1;
-}
-.sub {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--text-soft);
-  margin: 0.7rem 0 0;
-  max-width: 30ch;
-  position: relative;
-  z-index: 1;
+  background-color: #fff2ec;
+  /* tablero de la mesa: azul al 80% sobre crema (background.svg) */
+  background-image: conic-gradient(
+    #acd4f6 25%,
+    #fff2ec 0 50%,
+    #acd4f6 0 75%,
+    #fff2ec 0
+  );
+  background-size: var(--check) var(--check);
+  background-position: 50% 100%;
 }
 
-.ctaWrap {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  position: relative;
-  z-index: 1;
-}
-.cta {
-  border: none;
-  border-radius: var(--r-pill);
-  background: var(--coral);
-  color: var(--on-primary);
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: 0.005em;
-  padding: 1rem 1.9rem;
-  cursor: pointer;
-  transition: transform 0.09s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.12s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.cta:hover {
-  filter: brightness(0.97);
-}
-.cta:active {
-  transform: scale(0.96);
-}
-.ctaNote {
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--text-soft);
-}
-
-.deco {
+/* anclado abajo y centrado: si sobra alto, se ve más pared, nunca se corta la mesa */
+.stage {
   position: absolute;
-  object-fit: contain;
+  left: 50%;
+  bottom: 0;
+  width: 1920px;
+  height: 1080px;
+  transform: translateX(-50%) scale(var(--s));
+  transform-origin: 50% 100%;
+}
+
+.prop {
+  position: absolute;
+  max-width: none;
   pointer-events: none;
-  z-index: 0;
-}
-.deco1 {
-  width: 210px;
-  right: -38px;
-  bottom: -24px;
-  rotate: 6deg;
-}
-.deco2 {
-  width: 116px;
-  right: 168px;
-  bottom: 74px;
-  rotate: -12deg;
+  user-select: none;
 }
 
-/* ---------- barra lateral ---------- */
-.rail {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: 1fr 1fr 1fr auto;
-  gap: 0.8rem;
-}
-
-.entry {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.15rem;
-  border: none;
-  border-radius: var(--r-md);
-  padding: 0 1.1rem;
-  cursor: pointer;
-  text-align: left;
-  box-shadow: inset 0 0 0 2.5px var(--ink);
-  transition: transform 0.09s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.entry:active {
-  transform: scale(0.985);
-}
-.t_yellow {
-  background: var(--yellow-tint);
-}
-.t_teal {
-  background: var(--secondary-tint);
-}
-.t_paper {
-  background: var(--surface-sunken);
-}
-
-.entryText {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 62%;
-}
-.entryLabel {
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 1.15rem;
-  color: var(--ink);
-}
-.entryHint {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: var(--ink-2);
-}
-.entryChar {
+/* ---------- logo ---------- */
+.logo {
   position: absolute;
-  right: 8px;
-  bottom: -14px;
-  width: 96px;
-  height: 96px;
-  object-fit: contain;
+  left: 757.16px;
+  top: -0.74px;
+  width: 1031px;
+  height: 927px;
   pointer-events: none;
-  z-index: 0;
 }
-.chev {
+.logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+.logoInner {
   position: absolute;
-  right: 0.9rem;
-  top: 0.7rem;
-  font-size: 1.4rem;
-  line-height: 1;
-  color: var(--ink-2);
-  z-index: 1;
+  inset: 0;
+  transform-origin: 50% 85%;
+  animation: flicker 3.4s ease-in-out infinite;
+}
+.logoInner.hop {
+  animation: hop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.logoInner.shake {
+  animation: wiggle 0.7s ease-in-out;
+}
+@keyframes flicker {
+  0%, 100% { transform: rotate(0) scale(1, 1); }
+  30% { transform: rotate(0.5deg) scale(1.006, 1.012); }
+  65% { transform: rotate(-0.5deg) scale(0.996, 0.99); }
+}
+@keyframes hop {
+  0% { transform: translateY(0) scale(1, 1); }
+  25% { transform: translateY(0) scale(1.04, 0.94); }
+  55% { transform: translateY(-46px) scale(0.97, 1.05); }
+  80% { transform: translateY(0) scale(1.04, 0.95); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-3deg); }
+  45% { transform: rotate(2.6deg); }
+  70% { transform: rotate(-1.4deg); }
 }
 
-.summary {
+/* ojos: esferas blancas que parpadean */
+.eye {
+  position: absolute;
+  top: 782.74px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff2ec;
+  transform-origin: 50% 50%;
+  animation: blink 3.2s infinite;
+}
+.eyeL { left: 524.84px; }
+.eyeR { left: 660.84px; }
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.05); }
+  97% { transform: scaleY(1); }
+  98% { transform: scaleY(0.05); }
+}
+
+.hit {
+  position: absolute;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+.hitPot { left: 400px; top: 690px; width: 620px; height: 200px; }
+.hitFlame {
+  left: 90px;
+  top: 60px;
+  width: 780px;
+  height: 600px;
+  clip-path: ellipse(50% 50% at 50% 50%);
+}
+
+/* ---------- objetos interactivos ---------- */
+.obj {
+  position: absolute;
+  transform-origin: 50% 100%;
+}
+.obj img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  user-select: none;
+  transform-origin: 50% 100%;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.obj img:hover { transform: translateY(-6px) rotate(-2deg); }
+
+.plant img { animation: sway 4.2s ease-in-out infinite; }
+.plantB img { animation-duration: 5s; animation-delay: -1.7s; }
+.plant img.play { animation: sway 0.9s ease-in-out 2; }
+.plant img:hover { transform: none; }
+@keyframes sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.salt1 img.play, .salt2 img.play { animation: shakeSalt 0.7s ease-in-out; }
+@keyframes shakeSalt {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  15% { transform: rotate(-16deg) translateY(-14px); }
+  35% { transform: rotate(14deg) translateY(-10px); }
+  55% { transform: rotate(-10deg) translateY(-6px); }
+  75% { transform: rotate(6deg); }
+}
+
+.board img.play, .obj img.carry {
+  animation: bounce 0.55s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes bounce {
+  0% { transform: translateY(0) scale(1, 1); }
+  35% { transform: translateY(-30px) scale(0.98, 1.05); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* el cuchillo tiene su propia zona de clic (solo la diagonal), el resto es tabla */
+.knife img { pointer-events: none; transform-origin: 8% 80%; }
+.knife img.play { animation: chop 0.6s ease-in-out; }
+.knifeHit {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  clip-path: polygon(0 62%, 28% 42%, 90% 2%, 100% 28%, 40% 82%, 8% 100%);
+}
+@keyframes chop {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-22deg); }
+  55% { transform: rotate(6deg); }
+  75% { transform: rotate(-8deg); }
+}
+
+.spoon img { transform-origin: 8% 50%; }
+.spoon img.play { animation: stir 0.9s ease-in-out; }
+@keyframes stir {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-9deg) translateX(-10px); }
+  50% { transform: rotate(7deg) translateX(10px); }
+  80% { transform: rotate(-4deg); }
+}
+
+/* ---------- botones ---------- */
+.btn {
+  position: absolute;
+  width: 384px;
+  height: 105px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn > img:first-child {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.btn:hover { transform: translateY(-3px); }
+.btn:active { transform: translateY(2px) scale(0.985); }
+.btn:focus-visible {
+  outline: 4px solid #ffc836;
+  outline-offset: 6px;
+  border-radius: 40px;
+}
+
+.label {
+  position: absolute;
+  left: 48px;
+  right: 41px;
+  top: 19px;
+  height: 61px;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 2px var(--hairline);
-}
-.summaryText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  font-family: var(--font-body);
-}
-.summaryText strong {
-  font-weight: 800;
-  font-size: 0.92rem;
-  color: var(--text);
-}
-.summaryText span {
-  font-weight: 600;
-  font-size: 0.78rem;
-  color: var(--text-soft);
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  -webkit-text-stroke: 3px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #764944;
+  pointer-events: none;
 }
 
-@media (max-width: 900px), (orientation: portrait) {
-  .grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+/* gorro de chef: nace con scale al lado del botón activo */
+.pointer {
+  position: absolute;
+  left: 413.45px;
+  top: 12.1px;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  user-select: none;
+  scale: 0;
+  opacity: 0;
+  transform-origin: 15% 85%;
+  transition: scale 0.32s cubic-bezier(0.34, 1.7, 0.64, 1), opacity 0.15s;
+}
+.pointerOn {
+  scale: 1;
+  opacity: 1;
+  animation: nod 1.1s ease-in-out 0.3s infinite;
+}
+@keyframes nod {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 8px -4px; }
+}
+
+/* ---------- animación de entrada ---------- */
+.logo { animation: dropIn 0.8s cubic-bezier(0.34, 1.35, 0.64, 1) 0.1s both; }
+.btn { animation: slideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(0.35s + var(--i) * 0.1s) both; }
+.obj { animation: popIn 0.55s cubic-bezier(0.34, 1.6, 0.64, 1) calc(0.55s + var(--i) * 0.07s) both; }
+@keyframes dropIn {
+  from { translate: 0 -120px; opacity: 0; }
+  to { translate: 0 0; opacity: 1; }
+}
+@keyframes slideIn {
+  from { translate: -90px 0; opacity: 0; }
+  to { translate: 0 0; opacity: 1; }
+}
+@keyframes popIn {
+  from { scale: 0.4; translate: 0 30px; opacity: 0; }
+  to { scale: 1; translate: 0 0; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logoInner, .plant img, .pointerOn, .logo, .btn, .obj {
+    animation: none;
   }
-  .hero {
-    padding: 1.5rem 1.4rem;
-    min-height: 300px;
-  }
-  .title,
-  .sub {
-    max-width: 22ch;
-  }
-  .deco1 {
-    width: 150px;
-    right: -26px;
-  }
-  .deco2 {
-    display: none;
-  }
-  .cta {
-    align-self: stretch;
-    width: 100%;
-    text-align: center;
-  }
-  .ctaWrap {
-    align-self: stretch;
-    align-items: stretch;
-  }
-  .ctaNote {
-    align-self: center;
-  }
-  .rail {
-    display: flex;
-    flex-direction: column;
-  }
-  .entry {
-    min-height: 92px;
-    padding: 0.9rem 1.1rem;
+  .btn, .pointer {
+    transition: none;
   }
 }

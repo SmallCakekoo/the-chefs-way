@@ -142,6 +142,9 @@ sesión de mapeo del tablero.
 - [ ] Revisión de contraste y foco en modo oscuro en las pantallas nuevas
       (`FinaleScreen`, `DevRefScreen`, panel de sonido).
 - [ ] Animaciones de transición entre pantallas (nunca se hizo el "Pass 4").
+- [ ] Se deben poder extender los pedido cuando se tratan de varios.
+- [ ] Las cartas de ayuda/sabotaje deberían poder verse en pantalla, ahora reside de manera digital en la app.
+- [ ] En la pantalla deben aparecer las cartas que cada uno tiene en su mano y debe poder usarlas desde ahí.
 
 ## 8. Técnico
 
