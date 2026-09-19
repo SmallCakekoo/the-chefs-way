@@ -36,3 +36,14 @@
   width: 108px;
   height: 108px;
 }
+
+/* clientes-animalito: recorte con zoom a la cara (ver faceStyle en board.js) */
+.wrap { position: relative; }
+.wrap img.face {
+  position: absolute;
+  max-width: none;
+  width: calc(var(--fz) * 100%);
+  height: auto;
+  left: calc(50% - var(--fx) * var(--fz) * 100%);
+  top: calc(50% - var(--fy) * var(--far) * var(--fz) * 100%);
+}

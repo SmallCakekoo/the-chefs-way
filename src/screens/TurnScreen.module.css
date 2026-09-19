@@ -1,98 +1,338 @@
-.board {
-  flex: 1;
-  min-height: 0;
+/* Pantalla de turno: lienzo 1920x1080 (public/scenary/tablero/finalidea.svg).
+   El fondo y los asientos van pegados a la ventana; el centro usa la escala del menú (--s). */
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #fff2ec;
+}
+/* marco rosa: recto por fuera (llega a las esquinas de la ventana), redondeado por dentro */
+.rim {
+  position: absolute;
+  inset: calc(20px * var(--s));
+  z-index: 8;
+  border-radius: calc(34px * var(--s));
+  box-shadow: 0 0 0 100vmax #fca7a0;
+  pointer-events: none;
+}
+
+/* pared con cuadros: mismo patrón que background.svg (casillas de 80.5px, 50% de #FDD2CF sobre crema) */
+.wall {
+  position: absolute;
+  inset: 0;
+  background-color: #fff2ec;
+  background-image: conic-gradient(
+    transparent 25%,
+    #fee2dd 0 50%,
+    transparent 0 75%,
+    #fee2dd 0
+  );
+  background-size: calc(161px * var(--s)) calc(161px * var(--s));
+  background-position: calc(50vw - 960px * var(--s)) calc(100vh - 1080px * var(--s));
+}
+/* mesa + piso: de borde a borde de la ventana (mesa.svg, pero en CSS para poder estirarla) */
+.mesa {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(540px * var(--s));
+  background: #764944;
+  pointer-events: none;
+}
+.mesaTop {
+  height: calc(424px * var(--s));
+  box-sizing: border-box;
+  border-top: calc(17px * var(--s)) solid #8f5a54;
+  border-bottom: calc(17px * var(--s)) solid #8f5a54;
+  background: linear-gradient(#d0aea1, #c78e79);
+  box-shadow: inset 0 calc(-24px * var(--s)) 0 #b88a84, 0 calc(19px * var(--s)) 0 #764944;
+}
+
+/* ---------- esquinas ---------- */
+.corner {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+.tl { left: 0; top: 0; transform: scale(var(--s)); transform-origin: 0 0; }
+.tr { right: 0; top: 0; transform: scale(var(--s)); transform-origin: 100% 0; }
+.bl { left: 0; bottom: 0; transform: scale(var(--s)); transform-origin: 0 100%; }
+.br { right: 0; bottom: 0; transform: scale(var(--s)); transform-origin: 100% 100%; }
+
+.site {
+  position: absolute;
+  width: 706px;
+  height: 606px;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+.site_tl { left: -192.5px; top: -126px; }
+.site_tr { right: -145.5px; top: -123.3px; transform: scaleX(-1); }
+.site_bl { left: -192.5px; bottom: -169.6px; transform: scaleX(-1); }
+.site_br { right: -145.5px; bottom: -166.7px; transform: rotate(180deg); }
+
+.seat {
+  position: absolute;
+  width: 234px;
+  height: 225px;
+}
+.seat_tl { left: 83px; top: 67px; }
+.seat_tr { right: 100px; top: 60px; }
+.seat_bl { left: 100px; bottom: 50px; }
+.seat_br { right: 100px; bottom: 50px; }
+.seatName {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.1;
+  color: #fff;
+  -webkit-text-stroke: 4px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #764944;
+}
+.seat_tl .seatName, .seat_tr .seatName { top: calc(100% + 6px); }
+.seat_bl .seatName, .seat_br .seatName { bottom: calc(100% + 6px); }
+.seatOn > :first-child { animation: seatPulse 1.3s ease-in-out infinite; }
+@keyframes seatPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* ---------- centro ---------- */
+.stage {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 2;
+  transform: translateX(-50%) scale(var(--s));
+  transform-origin: 50% 100%;
+}
+.stage button {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.stage button:disabled { cursor: default; }
+.stage button:focus-visible {
+  outline: 4px solid #ffc836;
+  outline-offset: 4px;
+  border-radius: 24px;
+}
+
+.center {
+  position: absolute;
+  left: 843px;
+  top: 158px;
+}
+
+.iconBtn {
+  position: absolute;
+  top: 60px;
+  width: 91px;
+  height: 93px;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iconBtn:hover { transform: translateY(-3px); }
+.iconBtn:active { transform: translateY(2px) scale(0.96); }
+.iconBtn img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.backBtn { left: 700px; }
+.gearBtn {
+  left: 1129px;
+  border-radius: 24px;
+  background: #b0716a !important;
+  box-shadow: 0 6px 0 #8f5a54, inset 0 0 0 4px #a06058;
+  color: #ffd9c6;
+  display: grid;
+  place-items: center;
+}
+.gearBtn svg { width: 58px; height: 58px; }
+
+.coins {
+  position: absolute;
+  left: 837px;
+  top: 93px;
+  width: 234px;
+  height: 96px;
+  pointer-events: none;
+}
+.coins img { display: block; width: 100%; height: 100%; }
+.coinNum {
+  position: absolute;
+  left: 79px;
+  top: 15px;
+  width: 155px;
+  height: 63px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.board.split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 1.4rem 2rem;
-  align-items: stretch;
-}
-
-.stage {
-  width: min(440px, 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-}
-.split .stage {
-  width: 100%;
-  align-self: center;
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1;
+  color: #ff9317;
+  -webkit-text-stroke: 5px #fff2ec;
+  paint-order: stroke fill;
 }
 
-.orders {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
+.ribbon {
+  position: absolute;
+  left: 690.5px;
+  top: 333.5px;
+  width: 540px;
+  height: 151px;
+  pointer-events: none;
 }
-.ordersHead {
-  flex: none;
+.ribbon img { display: block; width: 100%; height: 100%; }
+.ribbonText {
+  position: absolute;
+  left: 100px;
+  width: 340px;
+  top: 14px;
+  height: 66px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--primary-deep);
-}
-/* si hay mas de un pedido a la vez (modo "paralelo"), la lista scrollea
-   por dentro en vez de empujar toda la pantalla hacia abajo */
-.ordersList {
-  min-height: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 0.2rem;
-  margin-right: -0.2rem;
-}
-
-.step {
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-soft);
-}
-.pos {
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-soft);
-  margin-top: -0.2rem;
-}
-.hint {
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-soft);
+  justify-content: center;
   text-align: center;
-  max-width: 30ch;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  white-space: nowrap;
+  color: #fff;
+  -webkit-text-stroke: 5px #796058;
+  paint-order: stroke fill;
+}
+.plaque {
+  position: absolute;
+  left: 835px;
+  top: 395px;
+  width: 263px;
+  height: 119px;
+  pointer-events: none;
+}
+.plaque img { display: block; width: 100%; height: 100%; }
+.plaqueText {
+  position: absolute;
+  inset: 46px 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1;
+  color: #fff2ec;
+  -webkit-text-stroke: 5px #8f5a54;
+  paint-order: stroke fill;
 }
 
+/* dado y botón */
+.die {
+  position: absolute;
+  left: 875px;
+  top: 587px;
+  width: 169px;
+  height: 165px;
+}
+.die > div {
+  width: 169px;
+  height: 165px;
+  border-radius: 34px;
+  box-shadow: inset 0 0 0 6px #8f5a54, 0 8px 0 #764944;
+}
+.die > div svg { width: 112px; height: 112px; }
+.roll {
+  position: absolute;
+  left: 778px;
+  top: 800px;
+  width: 384px;
+  height: 105px;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s;
+}
+.roll > img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.roll:not(:disabled):hover { transform: translateY(-3px); }
+.roll:not(:disabled):active { transform: translateY(2px) scale(0.985); }
+.roll:disabled { filter: grayscale(0.7) opacity(0.65); }
+.rollLabel {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  top: 19px;
+  height: 61px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  -webkit-text-stroke: 3px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #764944;
+  pointer-events: none;
+}
+.say {
+  position: absolute;
+  left: 660px;
+  width: 600px;
+  top: 820px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 46px;
+  color: #fff;
+  -webkit-text-stroke: 4px #9d645e;
+  paint-order: stroke fill;
+}
+.sayLow {
+  position: absolute;
+  left: 610px;
+  width: 700px;
+  top: 918px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 30px;
+  color: #fff2ec;
+  text-shadow: 0 2px 0 #764944;
+}
+
+/* ---------- tarjeta de resultado / bifurcación ---------- */
 .card {
-  width: 100%;
-  margin-top: 0.4rem;
-  background: var(--surface);
-  border-radius: var(--r-md);
-  box-shadow: inset 0 0 0 2.5px var(--ink);
-  padding: 1rem 1.1rem 1.1rem;
+  position: absolute;
+  left: 520px;
+  top: 570px;
+  width: 880px;
+  min-height: 300px;
+  max-height: 400px;
+  overflow: auto;
+  border-radius: 32px;
+  background: #fff2ec;
+  border: 7px solid #8f5a54;
+  box-shadow: 0 10px 0 #764944;
+}
+/* los componentes viejos son rem: se agrandan con zoom para la escala del lienzo */
+.cardIn {
+  zoom: 1.9;
+  padding: 0.9rem 1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   text-align: left;
 }
+.cardIn > span:first-child { align-self: flex-start; }
 .resultHead {
   display: flex;
   align-items: center;
@@ -124,7 +364,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.2rem;
 }
 .event {
   display: flex;
@@ -147,21 +386,39 @@
   line-height: 1.4;
   color: var(--ink-2);
 }
-.card > button {
-  margin-top: 0.3rem;
-}
-.card > span:first-child {
-  align-self: flex-start;
-}
 
-@media (max-width: 900px), (orientation: portrait) {
-  .board.split {
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-  }
-  .ordersList {
-    flex: none;
-    overflow-y: visible;
-  }
+/* ---------- animación de entrada (solo al empezar la partida) ---------- */
+@keyframes dropIn {
+  from { translate: 0 -120px; opacity: 0; }
+  to { translate: 0 0; opacity: 1; }
+}
+@keyframes popIn {
+  from { scale: 0.5; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+@keyframes slideCorner {
+  from { opacity: 0; translate: var(--dx) var(--dy); }
+  to { opacity: 1; translate: 0 0; }
+}
+.intro .site { animation: slideCorner 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.intro .site_tl { --dx: -160px; --dy: -120px; }
+.intro .site_tr { --dx: 160px; --dy: -120px; }
+.intro .site_bl { --dx: -160px; --dy: 120px; }
+.intro .site_br { --dx: 160px; --dy: 120px; }
+.intro .seat { animation: popIn 0.5s cubic-bezier(0.34, 1.6, 0.64, 1) both; }
+.intro .tl .seat { animation-delay: 0.2s; }
+.intro .tr .seat { animation-delay: 0.3s; }
+.intro .bl .seat { animation-delay: 0.4s; }
+.intro .br .seat { animation-delay: 0.5s; }
+.intro .center { animation: dropIn 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) 0.35s both; }
+.intro .plaque { animation: popIn 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.6s both; }
+.intro .ribbon { animation: dropIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.65s both; }
+.intro .coins { animation: popIn 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.75s both; }
+.intro .iconBtn { animation: popIn 0.4s cubic-bezier(0.34, 1.6, 0.64, 1) 0.8s both; }
+.intro .die { animation: popIn 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.85s both; }
+.intro .roll { animation: popIn 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.95s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .seatOn > :first-child { animation: none; }
+  .intro * { animation: none !important; }
 }

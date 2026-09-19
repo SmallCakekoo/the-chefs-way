@@ -17,8 +17,27 @@ export const CHARACTERS = [
   { id: "pan", name: "Pan", src: A(11), tint: "var(--yellow)" },
   { id: "taco", name: "Taco", src: A(12), tint: "var(--yellow)" },
 ];
+
+// Clientes-animalito: son los que eligen los jugadores (arte en public/clients/).
+const C = (n) => `/clients/${encodeURI("Animalito " + n)}.svg`;
+export const CLIENTS = [
+  { id: "raton", name: "Miga", src: C(1), tint: "var(--coral)", face: [0.397, 0.186, 1.238] },
+  { id: "panda", name: "Bambu", src: C(2), tint: "var(--lime)", face: [0.517, 0.183, 1.384] },
+  { id: "pinguino", name: "Pipo", src: C(5), tint: "var(--forest)", face: [0.485, 0.181, 1.439] },
+  { id: "gato", name: "Canela", src: C(6), tint: "var(--orange)", face: [0.44, 0.17, 1.05] },
+  { id: "gatoBN", name: "Oreo", src: C(7), tint: "var(--yellow)", face: [0.446, 0.184, 1.081] },
+  { id: "osito", name: "Tiburcio", src: C(8), tint: "var(--berry)", face: [0.503, 0.18, 1.27] },
+  { id: "hamster", name: "Bombon", src: C(9), tint: "var(--yellow)", face: [0.521, 0.27, 1.258] },
+];
+/** Estilo para encuadrar la cara de un cliente dentro de un círculo (variables CSS). */
+export const faceStyle = (c) =>
+  c.face
+    ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": 1.75 / c.face[2], "--far": c.face[2] }
+    : undefined;
 export const characterById = (id) =>
-  CHARACTERS.find((c) => c.id === id) || CHARACTERS[0];
+  CHARACTERS.find((c) => c.id === id) ||
+  CLIENTS.find((c) => c.id === id) ||
+  CHARACTERS[0];
 export const PALETTE = CHARACTERS.map((c) => c.tint);
 
 /* ============================================================

@@ -26,7 +26,6 @@ const GameContext = createContext(null);
 const LS_KEY = "slammed.v2";
 
 const DEFAULTS = {
-  seenOnboarding: false,
   profile: { name: "Chef invitado", characterId: "queso", description: "" },
   settings: {
     sound: true,
@@ -46,7 +45,6 @@ function loadPersisted() {
     if (!raw) return DEFAULTS;
     const p = JSON.parse(raw);
     return {
-      seenOnboarding: !!p.seenOnboarding,
       profile: { ...DEFAULTS.profile, ...(p.profile || {}) },
       settings: { ...DEFAULTS.settings, ...(p.settings || {}) },
       stats: { ...DEFAULTS.stats, ...(p.stats || {}) },
@@ -62,7 +60,6 @@ function persist(state) {
     localStorage.setItem(
       LS_KEY,
       JSON.stringify({
-        seenOnboarding: state.seenOnboarding,
         profile: state.profile,
         settings: state.settings,
         stats: state.stats,
@@ -77,6 +74,8 @@ function makeInitial() {
   const p = loadPersisted();
   return {
     route: "login",
+    // la animación de entrada del menú solo va la primera vez y al volver del final de partida
+    menuIntro: true,
     players: [],
     order: [],
     posOf: {},
@@ -185,7 +184,6 @@ function reducer(state, action) {
         turnIdx: 0,
         turnNo: 0,
         statsAwarded: false,
-        seenOnboarding: true,
         orders: [],
         orderSeq: 0,
         perPlayer,
@@ -265,9 +263,13 @@ function reducer(state, action) {
       return { ...state, turnIdx, turnNo: state.turnNo + 1 };
     }
 
+    case "menuIntroDone":
+      return state.menuIntro ? { ...state, menuIntro: false } : state;
+
     case "resetGame":
       return {
         ...state,
+        menuIntro: action.intro ?? state.menuIntro,
         players: [],
         order: [],
         posOf: {},
@@ -368,17 +370,6 @@ function reducer(state, action) {
     case "setProfile":
       return { ...state, profile: { ...state.profile, ...action.patch } };
 
-    case "replayOnboarding":
-      return { ...state, route: "onboarding", onboardingReplay: true };
-
-    case "finishOnboarding":
-      return {
-        ...state,
-        seenOnboarding: true,
-        onboardingReplay: false,
-        route: action.next || "menu",
-      };
-
     case "logout":
       return {
         ...makeInitial(),
@@ -397,7 +388,7 @@ export function GameProvider({ children }) {
   // persistencia (autoguardado, sin boton)
   useEffect(() => {
     persist(state);
-  }, [state.seenOnboarding, state.profile, state.settings, state.stats]);
+  }, [state.profile, state.settings, state.stats]);
 
   // tema
   useEffect(() => {

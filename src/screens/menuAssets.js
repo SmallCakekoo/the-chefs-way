@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 // Montaje del menú (lienzo de diseño 1920x1080).
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -34,4 +36,15 @@ export function preloadMenu(onProgress) {
 /** Escala el lienzo para que quepa entero. */
 export function fitScale() {
   return Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+}
+
+/** Escala del lienzo 1920x1080, actualizada al redimensionar. */
+export function useStageScale() {
+  const [scale, setScale] = useState(fitScale);
+  useEffect(() => {
+    const onResize = () => setScale(fitScale());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return scale;
 }

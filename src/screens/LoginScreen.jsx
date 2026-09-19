@@ -6,7 +6,7 @@ import styles from "./LoginScreen.module.css";
 
 /** Pantalla de carga: precarga el menú y espera "press any key". */
 export default function LoginScreen() {
-  const { navigate, seenOnboarding } = useGame();
+  const { navigate } = useGame();
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
   const [scale, setScale] = useState(fitScale);
@@ -36,7 +36,7 @@ export default function LoginScreen() {
       if (gone || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
       gone = true;
       sfx.press();
-      navigate(seenOnboarding ? "menu" : "onboarding");
+      navigate("menu");
     };
     window.addEventListener("keydown", enter);
     window.addEventListener("pointerdown", enter);
@@ -44,7 +44,7 @@ export default function LoginScreen() {
       window.removeEventListener("keydown", enter);
       window.removeEventListener("pointerdown", enter);
     };
-  }, [ready, navigate, seenOnboarding]);
+  }, [ready, navigate]);
 
   return (
     <main className={styles.root} style={{ "--s": scale, "--check": `${113.34 * scale}px` }}>

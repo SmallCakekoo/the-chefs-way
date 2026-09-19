@@ -1,4 +1,4 @@
-import { characterById } from "../game/board.js";
+import { characterById, faceStyle } from "../game/board.js";
 import styles from "./CharacterAvatar.module.css";
 
 /** Ficha redonda con el personaje-alimento. size: sm | md | lg | xl.
@@ -15,9 +15,15 @@ export default function CharacterAvatar({
       className={[styles.wrap, styles[size], styles[shape], className]
         .filter(Boolean)
         .join(" ")}
-      style={{ background: c.tint }}
+      style={c.face ? { background: "#45b1fb" } : { background: c.tint }}
     >
-      <img src={c.src} alt={c.name} loading="lazy" />
+      <img
+        className={c.face ? styles.face : undefined}
+        src={c.src}
+        alt={c.name}
+        loading="lazy"
+        style={faceStyle(c)}
+      />
     </span>
   );
 }

@@ -1,0 +1,16 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g clip-path="url(#clip0_467_376)">
+<rect width="1920" height="1080" fill="#FFF2EC"/>
+<rect opacity="0.5" width="1920" height="1080" fill="url(#pattern0_467_376)"/>
+</g>
+<defs>
+<clipPath id="clip0_467_376">
+<rect width="1920" height="1080" fill="white"/>
+</clipPath>
+<pattern id="pattern0_467_376" patternUnits="userSpaceOnUse" patternTransform="matrix(161 0 0 161 0 0)" preserveAspectRatio="none" viewBox="0 0 100 100" width="1" height="1">
+<g id="pattern0_467_376_inner">
+<path d="M0 0H50V50H0V0Z" fill="#FDD2CF"/>
+<path d="M50 50H100V100H50V50Z" fill="#FDD2CF"/>
+</g>
+</pattern></defs>
+</svg>

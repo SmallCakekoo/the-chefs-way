@@ -89,9 +89,9 @@ export default function ProfileScreen() {
 
       <ConfirmDialog
         open={confirmOut}
-        title="¿Cerrar sesión?"
+        title="Hasta luego"
         body="Tu perfil, tus ajustes y tus logros quedan guardados en este dispositivo. Volverás a la pantalla de inicio."
-        confirmLabel="Cerrar sesión"
+        confirmLabel="Salir"
         cancelLabel="Quedarme"
         onCancel={() => setConfirmOut(false)}
         onConfirm={() => {

@@ -16,6 +16,8 @@
   gap: calc(40px * var(--s));
 }
 .logo {
+  /* corre el logo a la izquierda: el peso visual es la olla (con su mango), no la imagen entera. Ajusta el 65 */
+  translate: calc(-65px * var(--s)) 0;
   width: calc(760px * var(--s));
   height: auto;
   user-select: none;

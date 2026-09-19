@@ -1,34 +1,360 @@
-.note {
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-soft);
-  text-align: center;
-}
-.start {
-  margin-top: auto;
+/* Registro de jugadores: lienzo 1920x1080 escalado con --s (mismo montaje que el menú). */
+.root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  background: #fff2ec;
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  text-align: center;
-  padding: 1.4rem 1.2rem;
-  border-radius: var(--r-md);
-  background: var(--surface-sunken);
+/* izquierda: cocina a pantalla completa; su contenido se monta en un lienzo 1100x1080 con la escala del menú */
+.scene {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
-.emptyArt {
+.kitchen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 100%;
+  /* saca del encuadre las esquinas redondeadas del SVG */
+  transform: scale(1.06);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.sceneStage {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1100px;
+  height: 1080px;
+  transform: translateX(-50%) scale(var(--s));
+  transform-origin: 50% 100%;
+}
+
+/* derecha: columna de 770px de diseño */
+.side {
+  position: relative;
+  flex: none;
+  width: calc(770px * var(--s));
+  overflow: hidden;
+  background: #fff2ec;
+}
+.sideStage {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 770px;
+  height: 1080px;
+  transform: scale(var(--s));
+  transform-origin: 0 100%;
+}
+/* el marco y todo lo que va en él se reduce junto, anclado al centro de su borde superior */
+.panel {
+  position: absolute;
+  inset: 0;
+  transform: scale(0.9);
+  transform-origin: 392px 226px;
+  pointer-events: none;
+}
+.panel > * { pointer-events: auto; }
+.prop {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+:where(.root) button {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+:where(.root) button:disabled { cursor: default; }
+:where(.root) button:focus-visible {
+  outline: 4px solid #ffc836;
+  outline-offset: 4px;
+  border-radius: 28px;
+}
+
+/* ---------- volver ---------- */
+.back {
+  position: absolute;
+  z-index: 2;
+  left: calc(40px * var(--s));
+  top: calc(36px * var(--s));
+  width: 91px;
+  height: 93px;
+  scale: var(--s);
+  transform-origin: 0 0;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.back img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.back:hover { transform: translateY(-3px); }
+.back:active { transform: translateY(2px) scale(0.96); }
+
+/* ---------- selector de cliente ---------- */
+.arrow {
+  position: absolute;
+  z-index: 2;
+  top: 470px;
+  width: 132px;
+  height: 128px;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.arrow img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.arrowL { left: 100px; }
+.arrowR { left: 868px; }
+.arrowR img { transform: scaleX(-1); }
+.arrowL:hover { transform: translateX(-6px); }
+.arrowR:hover { transform: translateX(6px); }
+.arrow:active { transform: scale(0.94); }
+
+/* el cliente está "parado": pies al borde inferior de la pantalla (los últimos píxeles quedan cortados) */
+.stageCat {
+  position: absolute;
+  left: 0;
+  width: 1100px;
+  top: 330px;
+  height: 800px;
+  pointer-events: none;
+  z-index: 1;
+}
+.stageCat img {
+  position: absolute;
+  bottom: 0;
+  /* centrado por el cuerpo (--fx), no por la imagen: los que tienen cola se ven descentrados si no */
+  left: calc(550px - var(--fx, 0.5) * 800px / var(--far, 1.2));
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  filter: drop-shadow(0 18px 18px rgb(80 60 90 / 0.25));
+  transform-origin: 50% 100%;
+  animation: catIn 0.4s cubic-bezier(0.34, 1.6, 0.64, 1);
+}
+.catName {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -70px;
+  left: 250px;
+  right: 250px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 4px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #764944;
+}
+@keyframes catIn {
+  from { transform: scale(0.85, 0.9) translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ---------- continuar ---------- */
+.go {
+  position: absolute;
+  z-index: 3;
+  left: 44px;
+  top: 944px;
+  width: 384px;
+  height: 105px;
+  scale: 0.9;
+  transform-origin: 0 0;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s;
+}
+.go > img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.go:not(:disabled):hover { transform: translateY(-3px); }
+.go:not(:disabled):active { transform: translateY(2px) scale(0.985); }
+.go:disabled { filter: grayscale(0.7) opacity(0.7); }
+.goLabel {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  top: 19px;
+  height: 61px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  -webkit-text-stroke: 3px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #764944;
+  pointer-events: none;
+}
+
+/* ---------- panel derecho ---------- */
+.star {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: 50% 50%;
+}
+.starBig { left: 334px; top: 204px; width: 96px; height: 103px; animation: twinkle 2.6s ease-in-out infinite; }
+.starL { left: 184px; top: 268px; width: 32px; height: 32px; animation: twinkle 2.2s ease-in-out 0.6s infinite; }
+.starR { left: 552px; top: 258px; width: 28px; height: 28px; animation: twinkle 2.9s ease-in-out 1.2s infinite; }
+@keyframes twinkle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(14deg) scale(1.1); }
+}
+.title {
+  position: absolute;
+  left: 82px;
+  width: 622px;
+  top: 320px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 62px;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 5px #9d645e;
+  paint-order: stroke fill;
+  text-shadow: 0 4px 0 #764944;
+}
+
+.nameRow {
+  position: absolute;
+  left: 22px;
+  top: 62px;
+  width: 730px;
+  height: 130px;
+}
+.nameBox {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 583px;
+  height: 125px;
+}
+.nameBox > img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.input {
+  position: absolute;
+  left: 46px;
+  top: 7px;
+  width: calc(100% - 92px);
+  height: calc(100% - 14px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 30px;
+  color: #6b3f36;
+}
+.input:focus, .input:focus-visible { outline: none; box-shadow: none; }
+.input::placeholder { color: #c98f7f; }
+.nameBox:focus-within { filter: drop-shadow(0 0 8px #ffc836); }
+.add {
+  position: absolute;
+  left: 600px;
+  top: 0;
+  width: 126px;
+  height: 130px;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s;
+}
+.add img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.add:not(:disabled):hover { transform: translateY(-3px); }
+.add:not(:disabled):active { transform: translateY(2px) scale(0.96); }
+.add:disabled { filter: grayscale(0.5) opacity(0.6); }
+
+/* ---------- filas de jugadores ---------- */
+.row {
+  position: absolute;
+  width: 575px;
+  height: 127px;
+  animation: rowIn 0.35s cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+.rowBg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.empty { opacity: 0.55; animation: none; }
+.avatar {
+  position: absolute;
+  left: 20px;
+  top: 12px;
   width: 92px;
   height: 92px;
-  object-fit: contain;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #45b1fb;
 }
-.emptyText {
+/* foto con zoom a la cara: la posición sale de --fx/--fy/--fz/--far (ver faceStyle) */
+.avatar img {
+  position: absolute;
+  max-width: none;
+  width: calc(var(--fz) * 100%);
+  height: auto;
+  left: calc(50% - var(--fx) * var(--fz) * 100%);
+  top: calc(50% - var(--fy) * var(--far) * var(--fz) * 100%);
+  user-select: none;
+  pointer-events: none;
+}
+.pname {
+  position: absolute;
+  left: 126px;
+  right: 90px;
+  top: 0;
+  height: 118px;
+  display: flex;
+  align-items: center;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--text-soft);
-  max-width: 32ch;
-  margin: 0;
+  font-weight: 800;
+  font-size: 40px;
+  color: #4a3a34;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 32px;
+  color: #b28f82;
+}
+.rm {
+  position: absolute;
+  right: 24px;
+  top: 30px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #b0716a;
+  transition: background 0.15s, transform 0.14s;
+}
+.rm:hover { background: #f6c8b3; transform: scale(1.08); }
+@keyframes rowIn {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row, .stageCat img, .star { animation: none; }
 }

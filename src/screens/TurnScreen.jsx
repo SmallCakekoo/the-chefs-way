@@ -8,18 +8,22 @@ import {
   SHORTCUT_NODES,
   advanceGraph,
 } from "../game/board.js";
-import Screen from "../components/Screen.jsx";
 import Button from "../components/Button.jsx";
 import Die from "../components/Die.jsx";
-import PlayerChip from "../components/PlayerChip.jsx";
 import PressablePill from "../components/PressablePill.jsx";
 import Tag from "../components/Tag.jsx";
-import OrderTimer from "../components/OrderTimer.jsx";
-import OrderCard from "../components/OrderCard.jsx";
+import PlayerRing from "../components/PlayerRing.jsx";
+import OrderScene from "./OrderScene.jsx";
 import GameSettings from "../components/GameSettings.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import { sfx } from "../lib/sfx.js";
+import { useStageScale } from "./menuAssets.js";
 import styles from "./TurnScreen.module.css";
+
+const ART = "/scenary/tablero/";
+const COMMON = "/scenary/common/";
+
+const SEATS = ["tl", "tr", "bl", "br"];
 
 function outcomeFor(nodeId, name) {
   if (nodeId === FINAL_NODE) {
@@ -33,7 +37,8 @@ function outcomeFor(nodeId, name) {
 const casillaLabel = (id) => (id === "INICIO" ? "la salida" : `la casilla ${id}`);
 
 export default function TurnScreen() {
-  const { currentPlayer, currentName, posOf, orders, dispatch } = useGame();
+  const { players, currentPlayer, currentName, posOf, orders, coins, turnNo, dispatch } = useGame();
+  const scale = useStageScale();
   const [phase, setPhase] = useState("idle"); // idle | rolling | fork | result
   const [dieValue, setDieValue] = useState(null);
   const [fork, setFork] = useState(null); // { from, options, steps, roll, tookShortcut }
@@ -94,115 +99,178 @@ export default function TurnScreen() {
     walk(nextId, fork.steps - 1, fork.roll, took);
   };
 
-  const twoCol = pendingOrders.length > 0;
+  const idx = Math.max(0, players.findIndex((p) => p.name === currentName));
+  const label = pos === "INICIO" ? "Salida" : `Casilla ${pos}`;
+  const cardOpen = phase === "fork" || phase === "result";
 
   return (
-    <Screen
-      onBack={() => setConfirmExit(true)}
-      onSettings={() => setShowSettings(true)}
-      layout="flow"
+    <main
+      className={`${styles.root} ${turnNo === 0 ? styles.intro : ""}`}
+      style={{ "--s": scale }}
     >
-      <OrderTimer />
+      <div className={styles.wall} />
+      <div className={styles.mesa}>
+        <div className={styles.mesaTop} />
+      </div>
 
-      <div className={`${styles.board} ${twoCol ? styles.split : ""}`}>
-        <div className={styles.stage}>
-          <span className={styles.step}>Le toca a</span>
-          <PlayerChip
-            characterId={currentPlayer.characterId}
-            name={currentPlayer.name}
-            size="lg"
-          />
-          <p className={styles.pos}>En {casillaLabel(pos)}</p>
-
-          <Die value={dieValue} rolling={phase === "rolling"} />
-
-          {phase === "idle" && (
-            <Button
-              variant="primary"
-              wide
-              onClick={roll}
-              sound="roll"
-              disabled={blocked}
-            >
-              Tirar dado
-            </Button>
-          )}
-          {blocked && phase === "idle" && (
-            <p className={styles.hint}>
-              Terminen los pedidos en marcha para poder tirar.
-            </p>
-          )}
-          {phase === "rolling" && <p className={styles.hint}>Rodando…</p>}
-
-          {phase === "fork" && fork && (
-            <div className={styles.card}>
-              <Tag tone="y">Bifurcación en {casillaLabel(fork.from)}</Tag>
-              <p className={styles.cardText}>
-                Sacaste un {fork.roll} y el camino se divide. ¿Por cuál rama se
-                fueron en la mesa?
-              </p>
-              <div className={styles.opts}>
-                {fork.options.map((id) => (
-                  <PressablePill key={id} onClick={() => chooseFork(id)}>
-                    Rama {id}
-                    {SHORTCUT_NODES.has(id) ? " · atajo" : ""}
-                  </PressablePill>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {phase === "result" && result && (
-            <div className={styles.card}>
-              <div className={styles.resultHead}>
-                <Tag tone={result.tag}>
-                  {result.node === FINAL_NODE ? "FIN" : `Casilla ${result.node}`}
-                </Tag>
-                <span className={styles.rolled}>Sacaste un {dieValue}</span>
-              </div>
-              <p className={styles.cardTitle}>{result.title}</p>
-              {result.text && <p className={styles.cardText}>{result.text}</p>}
-              {result.event && (
-                <div className={styles.event}>
-                  <span className={styles.eventTitle}>{result.event.title}</span>
-                  <span className={styles.eventText}>{result.event.text}</span>
-                </div>
-              )}
-              <Button
-                variant="primary"
-                wide
-                disabled={blocked}
-                onClick={() => {
-                  sfx.tap();
-                  dispatch({ type: "nextTurn" });
-                }}
+      {/* esquinas: óvalos + asientos de cada jugador, pegados a las esquinas de la ventana */}
+      {SEATS.map((corner, i) => {
+        const p = players[i];
+        return (
+          <div key={corner} className={`${styles.corner} ${styles[corner]}`}>
+            <img
+              className={`${styles.site} ${styles["site_" + corner]}`}
+              src={ART + "site.svg"}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+            />
+            {p && (
+              <div
+                className={`${styles.seat} ${styles["seat_" + corner]} ${
+                  p.name === currentName ? styles.seatOn : ""
+                }`}
               >
-                {blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}
-              </Button>
-            </div>
-          )}
+                <PlayerRing index={i} characterId={p.characterId} />
+                <span className={styles.seatName}>{p.name}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className={styles.stage}>
+        <button
+          className={`${styles.iconBtn} ${styles.backBtn}`}
+          aria-label="Salir de la partida"
+          onClick={() => {
+            sfx.back();
+            setConfirmExit(true);
+          }}
+        >
+          <img src={COMMON + "backbtn.svg"} alt="" draggable="false" />
+        </button>
+        <button
+          className={`${styles.iconBtn} ${styles.gearBtn}`}
+          aria-label="Sonido"
+          onClick={() => {
+            sfx.tap();
+            setShowSettings(true);
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" strokeWidth="2.2" />
+            <path
+              d="M12 3.6v2.6M12 17.8v2.6M3.6 12h2.6M17.8 12h2.6M6 6l1.9 1.9M16.1 16.1 18 18M18 6l-1.9 1.9M7.9 16.1 6 18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+
+        {/* jugador en turno */}
+        <PlayerRing index={idx} characterId={currentPlayer.characterId} className={styles.center} />
+        <div className={styles.plaque}>
+          <img src={ART + "woodrectange.svg"} alt="" draggable="false" />
+          <span className={styles.plaqueText}>{label}</span>
         </div>
 
-        {twoCol && (
-          <div className={styles.orders}>
-            <span className={styles.ordersHead}>
-              {pendingOrders.length > 1 ? "Pedidos en marcha" : "Pedido en marcha"}
-            </span>
-            <div className={styles.ordersList}>
-              {pendingOrders.map((o) => (
-                <OrderCard key={o.id} order={o} defaultOpen />
-              ))}
+        <div className={styles.ribbon}>
+          <img src={ART + "liston.svg"} alt="" draggable="false" />
+          <span className={styles.ribbonText}>Turno de {currentName}</span>
+        </div>
+        <div className={styles.coins}>
+          <img src={ART + "coins.svg"} alt="" draggable="false" />
+          <span className={styles.coinNum} title="Moneditas del restaurante">
+            {coins}
+          </span>
+        </div>
+        {/* dado + botón */}
+        {!cardOpen && (
+          <>
+            <div className={styles.die}>
+              <Die value={dieValue} rolling={phase === "rolling"} />
+            </div>
+            {phase === "idle" && (
+              <button className={styles.roll} onClick={roll} disabled={blocked}>
+                <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
+                <span className={styles.rollLabel}>Tirar dado</span>
+              </button>
+            )}
+            {phase === "rolling" && <p className={styles.say}>Rodando</p>}
+            {blocked && phase === "idle" && (
+              <p className={styles.sayLow}>Terminen los pedidos en marcha para poder tirar.</p>
+            )}
+          </>
+        )}
+
+        {cardOpen && (
+          <div className={styles.card}>
+            <div className={styles.cardIn}>
+              {phase === "fork" && fork && (
+                <>
+                  <Tag tone="y">Bifurcación en {casillaLabel(fork.from)}</Tag>
+                  <p className={styles.cardText}>
+                    Sacaste un {fork.roll} y el camino se divide. ¿Por cuál rama se fueron en la
+                    mesa?
+                  </p>
+                  <div className={styles.opts}>
+                    {fork.options.map((id) => (
+                      <PressablePill key={id} onClick={() => chooseFork(id)}>
+                        Rama {id}
+                        {SHORTCUT_NODES.has(id) ? " · atajo" : ""}
+                      </PressablePill>
+                    ))}
+                  </div>
+                </>
+              )}
+              {phase === "result" && result && (
+                <>
+                  <div className={styles.resultHead}>
+                    <Tag tone={result.tag}>
+                      {result.node === FINAL_NODE ? "FIN" : `Casilla ${result.node}`}
+                    </Tag>
+                    <span className={styles.rolled}>Sacaste un {dieValue}</span>
+                  </div>
+                  <p className={styles.cardTitle}>{result.title}</p>
+                  {result.text && <p className={styles.cardText}>{result.text}</p>}
+                  {result.event && (
+                    <div className={styles.event}>
+                      <span className={styles.eventTitle}>{result.event.title}</span>
+                      <span className={styles.eventText}>{result.event.text}</span>
+                    </div>
+                  )}
+                  <Button
+                    variant="primary"
+                    wide
+                    disabled={blocked}
+                    onClick={() => {
+                      sfx.tap();
+                      dispatch({ type: "nextTurn" });
+                    }}
+                  >
+                    {blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
       </div>
 
+
+      {/* llega un pedido: cambia de escena, el cliente pide en el mostrador */}
+      {pendingOrders.length > 0 && <OrderScene orders={pendingOrders} />}
+
+      <div className={styles.rim} />
       <GameSettings open={showSettings} onClose={() => setShowSettings(false)} />
       <ConfirmDialog
         open={confirmExit}
-        title="¿Salir de la partida?"
+        title="Salir del juego"
         body="Perderás el progreso de esta partida: posiciones, pedidos y turno. La mesa vuelve al menú."
-        confirmLabel="Salir al menú"
+        confirmLabel="Ir al inicio"
         cancelLabel="Seguir jugando"
         onCancel={() => setConfirmExit(false)}
         onConfirm={() => {
@@ -210,6 +278,6 @@ export default function TurnScreen() {
           dispatch({ type: "resetGame" });
         }}
       />
-    </Screen>
+    </main>
   );
 }
