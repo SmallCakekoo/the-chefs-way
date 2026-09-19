@@ -53,6 +53,10 @@ function blip(freq, dur, type = "triangle", gain = 0.05, force = false) {
 }
 
 export const sfx = {
+  // Sutil y sin vibración: suena al pasar el ratón por encima de un botón.
+  hover: () => {
+    blip(700, 0.05, "sine", 0.022);
+  },
   tap: () => {
     blip(420, 0.09, "triangle", 0.045);
     buzz(8);
@@ -99,3 +103,18 @@ export const sfx = {
     buzz([25, 40]);
   },
 };
+
+const HOVERABLE = "button:not(:disabled):not([data-no-hover])";
+
+/** Un solo listener global: suena hover al entrar en un botón (solo ratón/lápiz). */
+export function installHoverSfx() {
+  if (typeof document === "undefined") return;
+  document.addEventListener("pointerover", (e) => {
+    if (e.pointerType === "touch") return;
+    const el = e.target instanceof Element ? e.target.closest(HOVERABLE) : null;
+    if (!el) return;
+    const from = e.relatedTarget instanceof Element ? e.relatedTarget.closest(HOVERABLE) : null;
+    if (from === el) return;
+    sfx.hover();
+  });
+}

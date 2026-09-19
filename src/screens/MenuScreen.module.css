@@ -151,14 +151,8 @@
   75% { transform: rotate(6deg); }
 }
 
-.board img.play, .obj img.carry {
-  animation: bounce 0.55s cubic-bezier(0.3, 1.6, 0.5, 1);
-}
-@keyframes bounce {
-  0% { transform: translateY(0) scale(1, 1); }
-  35% { transform: translateY(-30px) scale(0.98, 1.05); }
-  100% { transform: translateY(0) scale(1, 1); }
-}
+.board img { cursor: default; }
+.board img:hover { transform: none; }
 
 /* el cuchillo tiene su propia zona de clic (solo la diagonal), el resto es tabla */
 .knife img { pointer-events: none; transform-origin: 8% 80%; }
@@ -190,6 +184,8 @@
   position: absolute;
   width: 384px;
   height: 105px;
+  scale: 1.15;
+  transform-origin: 0 0;
   padding: 0;
   border: none;
   background: none;
@@ -235,10 +231,10 @@
 /* gorro de chef: nace con scale al lado del botón activo */
 .pointer {
   position: absolute;
-  left: 413.45px;
-  top: 12.1px;
-  width: 80px;
-  height: 80px;
+  left: 425px;
+  top: 24px;
+  width: 56px;
+  height: 56px;
   pointer-events: none;
   user-select: none;
   scale: 0;
@@ -257,9 +253,9 @@
 }
 
 /* ---------- animación de entrada ---------- */
-.logo { animation: dropIn 0.8s cubic-bezier(0.34, 1.35, 0.64, 1) 0.1s both; }
-.btn { animation: slideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(0.35s + var(--i) * 0.1s) both; }
-.obj { animation: popIn 0.55s cubic-bezier(0.34, 1.6, 0.64, 1) calc(0.55s + var(--i) * 0.07s) both; }
+.intro .logo { animation: dropIn 0.8s cubic-bezier(0.34, 1.35, 0.64, 1) 0.1s both; }
+.intro .btn { animation: slideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(0.35s + var(--i) * 0.1s) both; }
+.intro .obj { animation: popIn 0.55s cubic-bezier(0.34, 1.6, 0.64, 1) calc(0.55s + var(--i) * 0.07s) both; }
 @keyframes dropIn {
   from { translate: 0 -120px; opacity: 0; }
   to { translate: 0 0; opacity: 1; }
@@ -274,7 +270,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .logoInner, .plant img, .pointerOn, .logo, .btn, .obj {
+  .logoInner, .plant img, .pointerOn, .intro .logo, .intro .btn, .intro .obj {
     animation: none;
   }
   .btn, .pointer {

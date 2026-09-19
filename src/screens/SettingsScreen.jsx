@@ -3,7 +3,6 @@ import Screen from "../components/Screen.jsx";
 import Card from "../components/Card.jsx";
 import Toggle from "../components/Toggle.jsx";
 import Slider from "../components/Slider.jsx";
-import Button from "../components/Button.jsx";
 import Ribbon from "../components/Ribbon.jsx";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { BodyText } from "../components/Text.jsx";
@@ -99,16 +98,6 @@ export default function SettingsScreen() {
               {label}
             </button>
           ))}
-        </div>
-      </Card>
-
-      <Card flat tint="paper">
-        <SectionLabel>Tutorial</SectionLabel>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>Volver a ver las 3 pantallas de inicio</span>
-          <Button onClick={() => dispatch({ type: "replayOnboarding" })}>
-            Ver tutorial
-          </Button>
         </div>
       </Card>
 

@@ -1,0 +1,42 @@
+/* Aro de color con la cara del jugador (arte de public/scenary/tablero/*circle.svg). 234x225 */
+.ring {
+  width: 234px;
+  height: 225px;
+}
+.ringArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+.face {
+  position: absolute;
+  left: 22px;
+  top: 22px;
+  width: 190px;
+  height: 181px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #45b1fb;
+}
+.faceZoom {
+  position: absolute;
+  max-width: none;
+  width: calc(var(--fz) * 100%);
+  height: auto;
+  left: calc(50% - var(--fx) * var(--fz) * 100%);
+  top: calc(50% - var(--fy) * var(--far) * var(--fz) * 105%);
+  user-select: none;
+  pointer-events: none;
+}
+.faceFit {
+  position: absolute;
+  inset: 10%;
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+

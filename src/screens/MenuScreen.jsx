@@ -5,12 +5,11 @@ import { BASE, fitScale } from "./menuAssets.js";
 import styles from "./MenuScreen.module.css";
 
 // Botones: mismas posiciones que en el montaje (finalidea.svg).
-const BTN_X = 145.3;
-const BTN_Y = 163.3;
-const BTN_STEP = 157.63;
+const BTN_X = 95;
+const BTN_Y = 260;
+const BTN_STEP = 165;
 const ENTRIES = [
   { key: "play", label: "Jugar" },
-  { key: "rules", label: "Tutorial" },
   { key: "profile", label: "Perfil" },
   { key: "settings", label: "Config" },
 ];
@@ -37,10 +36,15 @@ function useStageScale() {
 }
 
 export default function MenuScreen() {
-  const { navigate, dispatch } = useGame();
+  const { navigate, dispatch, menuIntro } = useGame();
+  const [intro] = useState(menuIntro);
   const scale = useStageScale();
   const [active, setActive] = useState(null);
   const [playing, setPlaying] = useState({});
+
+  useEffect(() => {
+    dispatch({ type: "menuIntroDone" });
+  }, [dispatch]);
 
   const poke = (name) => {
     sfx.tap();
@@ -59,7 +63,7 @@ export default function MenuScreen() {
 
   return (
     <main
-      className={styles.root}
+      className={`${styles.root} ${intro ? styles.intro : ""}`}
       style={{ "--s": scale, "--check": `${113.34 * scale}px` }}
     >
       <div className={styles.stage}>
@@ -85,11 +89,13 @@ export default function MenuScreen() {
           <button
             className={`${styles.hit} ${styles.hitFlame}`}
             aria-label="Llama"
+            data-no-hover=""
             onClick={() => poke("flame")}
           />
           <button
             className={`${styles.hit} ${styles.hitPot}`}
             aria-label="Olla"
+            data-no-hover=""
             onClick={() => poke("pot")}
           />
         </div>
@@ -97,12 +103,7 @@ export default function MenuScreen() {
         {PROPS.map(([cls, file, x, y, w, h, tf], i) => {
           const name = cls.split(" ")[0] + (cls.includes("plantB") ? "B" : "");
           const isKnife = name === "knife";
-          // el cuchillo va sobre la tabla: cuando la tabla rebota, se lo lleva
-          const imgClass = playing[name]
-            ? styles.play
-            : isKnife && playing.board
-              ? styles.carry
-              : "";
+          const imgClass = playing[name] ? styles.play : "";
           return (
             <div
               key={name}
@@ -110,12 +111,12 @@ export default function MenuScreen() {
               style={{ "--i": i, left: x, top: y, width: w, height: h, transform: tf }}
             >
               <img
-                key={(playing[name] || 0) + "-" + (isKnife ? playing.board || 0 : 0)}
+                key={playing[name] || 0}
                 className={imgClass}
                 src={BASE + file}
                 alt=""
                 draggable="false"
-                onClick={isKnife ? undefined : () => poke(name)}
+                onClick={isKnife || name === "board" ? undefined : () => poke(name)}
               />
               {isKnife && (
                 <span className={styles.knifeHit} onClick={() => poke("knife")} />

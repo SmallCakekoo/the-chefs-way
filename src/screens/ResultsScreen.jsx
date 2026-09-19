@@ -75,7 +75,7 @@ export default function ResultsScreen() {
           >
             Jugar otra vez
           </Button>
-          <Button wide onClick={() => dispatch({ type: "resetGame" })}>
+          <Button wide onClick={() => dispatch({ type: "resetGame", intro: true })}>
             Al menú
           </Button>
         </div>
