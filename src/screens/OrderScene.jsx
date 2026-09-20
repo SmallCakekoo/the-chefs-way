@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGame } from "../game/GameContext.jsx";
 import { characterById, ingredientById, faceStyle, POWER_CARD_INFO } from "../game/board.js";
 import PlayerRing from "../components/PlayerRing.jsx";
-import VacationIcon from "../components/VacationIcon.jsx";
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
 import useTypewriter from "../lib/useTypewriter.js";
 import { COIN_REWARD } from "../game/orders.js";
@@ -19,6 +18,100 @@ const FAN_R = 760; // radio del abanico
 const FAN_MAX_STEP = 13; // grados máximos entre cartas
 const CARD_W = 202;
 const CARD_H = 319;
+
+/* Globos de diálogo (order/dialogues/esquina-*.svg): de menor a mayor. `w`/`h` = tamaño del archivo; se muestran a
+   escala K. La cola queda abajo a la derecha, apuntando al cliente. Cada pedido usa el más chico donde le quepa el texto. */
+const DLG = "/scenary/order/dialogues/";
+const DLG_K = 0.24;
+const DLG_INSET = { l: 34, r: 48, t: 20, b: 34 }; // margen del texto dentro del globo (px de lienzo)
+const DLG_RIGHT = 800; // borde derecho del globo en el lienzo de la izquierda
+const DLG_BASE = 376; // línea de la que "cuelga" el globo (su base): así la cola siempre apunta al cliente
+const DIALOGUES = [
+  { id: "mini", w: 1534, h: 276 },
+  { id: "xs", w: 2276, h: 276 },
+  { id: "s", w: 2014, h: 520 },
+  { id: "m", w: 2304, h: 521 },
+  { id: "l", w: 2304, h: 727 },
+  { id: "xl", w: 2304, h: 895 },
+].map((d) => ({ ...d, W: Math.round(d.w * DLG_K), H: Math.round(d.h * DLG_K) }));
+
+/** El globo del cliente: fondo ilustrado, texto que se "escribe" y los ingredientes debajo. */
+function Dialogue({ order, line }) {
+  const { shown, done } = useTypewriter(line);
+  const measure = useRef(null);
+  const [fit, setFit] = useState({ d: DIALOGUES[DIALOGUES.length - 1], scale: 1, textH: 0 });
+  const items = order.items;
+
+  // elige el globo más chico donde cabe el texto completo + los ingredientes
+  useLayoutEffect(() => {
+    const el = measure.current;
+    if (!el) return;
+    const textEl = el.firstChild;
+    const pick = () => {
+      const at = (d) => {
+        el.style.width = `${d.W - DLG_INSET.l - DLG_INSET.r}px`;
+        return { need: el.scrollHeight, have: d.H - DLG_INSET.t - DLG_INSET.b, textH: textEl.offsetHeight };
+      };
+      for (const d of DIALOGUES) {
+        const m = at(d);
+        if (m.need <= m.have) return setFit({ d, scale: 1, textH: m.textH });
+      }
+      // ni el más grande alcanza: se achica un poco la letra
+      const d = DIALOGUES[DIALOGUES.length - 1];
+      const m = at(d);
+      setFit({ d, scale: Math.max(0.72, m.have / m.need), textH: m.textH });
+    };
+    pick();
+    document.fonts?.ready.then(pick);
+  }, [order.id, line]);
+
+  const { d, scale, textH } = fit;
+  const body = (
+    <>
+      <p className={styles.bubbleText} style={textH ? { minHeight: textH } : undefined}>
+        {line}
+      </p>
+      <div className={styles.chips}>
+        {items.map((id, i) => (
+          <span key={i} className={styles.chip}>
+            <CharacterAvatar id={id} size="sm" ingredient />
+            {ingredientById(id).name}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+
+  return (
+    <div
+      className={styles.bubble}
+      style={{ left: DLG_RIGHT - d.W, top: DLG_BASE, width: d.W, height: d.H, "--fit": scale }}
+    >
+      <img className={styles.bubbleArt} src={`${DLG}esquina-${d.id}.svg`} alt="" aria-hidden="true" draggable="false" />
+      <div
+        className={styles.bubbleIn}
+        style={{ inset: `${DLG_INSET.t}px ${DLG_INSET.r}px ${DLG_INSET.b}px ${DLG_INSET.l}px` }}
+      >
+        <p className={styles.bubbleText} style={textH ? { minHeight: textH } : undefined}>
+          {shown}
+          {!done && <span className={styles.caret} aria-hidden="true" />}
+        </p>
+        <div className={styles.chips} style={{ "--typed-ms": `${line.length * 32 + 120}ms` }}>
+          {items.map((id, i) => (
+            <span key={i} className={`${styles.chip} ${styles.chipIn}`} style={{ "--i": i }}>
+              <CharacterAvatar id={id} size="sm" ingredient />
+              {ingredientById(id).name}
+            </span>
+          ))}
+        </div>
+      </div>
+      {/* copia invisible con el texto completo, solo para medir qué globo hace falta */}
+      <div ref={measure} className={styles.bubbleMeasure} aria-hidden="true">
+        {body}
+      </div>
+    </div>
+  );
+}
 
 function mmss(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -171,7 +264,6 @@ export default function OrderScene({ orders }) {
   const [pickedKey, setPickedKey] = useState(null);
   const cur = orders[Math.min(sel, orders.length - 1)];
   const line = cur.line || `Un ${cur.dish} con:`;
-  const { shown, done } = useTypewriter(line);
   const n = orders.length;
   // los asientos de quienes hacen el pedido seleccionado laten; los demás se apagan
   const active = (name) => {
@@ -226,8 +318,9 @@ export default function OrderScene({ orders }) {
       const moved = d.moved;
       stop();
       if (!moved) {
+        // un toque muestra lo que hace la carta; otro toque sobre la misma la oculta; sobre otra, cambia el mensaje
         sfx.select();
-        setPickedKey(h.key);
+        setPickedKey((cur) => (cur === h.key ? null : h.key));
       } else if (over) {
         sfx.win();
         dp({ type: "usePowerCard", name: ps[h.owner].name, index: h.ci });
@@ -263,7 +356,7 @@ export default function OrderScene({ orders }) {
   }, [epic?.id]);
   useEffect(() => () => clearTimeout(dragRef.current?.timer), []);
   const pickedIdx = hand.findIndex((h) => h.key === pickedKey);
-  const activeIdx = pickedIdx >= 0 ? pickedIdx : Math.round(mid);
+  const activeIdx = pickedIdx; // sin carta elegida no hay mensaje (-1)
   // los tickets caben en el riel (653px): con varios se solapan
   const step = n <= 1 ? 0 : Math.min(417, Math.floor((653 - 417) / (n - 1)));
   const startX = n <= 1 ? (653 - 417) / 2 : 0;
@@ -279,20 +372,7 @@ export default function OrderScene({ orders }) {
         <div className={`${styles.ext} ${styles.extFront}`} />
         <div className={styles.leftStage}>
           <div className={styles.client} key={cur.id}>
-            <div className={styles.bubble}>
-              <p className={styles.bubbleText}>
-                {shown}
-                {!done && <span className={styles.caret} aria-hidden="true" />}
-              </p>
-              <div className={styles.chips} style={{ "--typed-ms": `${line.length * 32 + 120}ms` }}>
-                {cur.items.map((id, i) => (
-                  <span key={i} className={styles.chip} style={{ "--i": i }}>
-                    <CharacterAvatar id={id} size="sm" ingredient />
-                    {ingredientById(id).name}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <Dialogue order={cur} line={line} />
             <img
               className={styles.animal}
               src={cur.catImg}
@@ -419,10 +499,7 @@ export default function OrderScene({ orders }) {
                 <PlayerRing index={i} characterId={p.characterId} />
                 <span className={styles.seatName}>{p.name}</span>
                 {finishedOf[p.name] && (
-                  <span className={styles.helperTag}>
-                    <VacationIcon className={styles.helperHat} />
-                    De vacaciones
-                  </span>
+                  <span className={styles.helperTag}>De vacaciones</span>
                 )}
               </div>
             </div>

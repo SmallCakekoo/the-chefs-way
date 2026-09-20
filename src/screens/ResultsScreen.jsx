@@ -54,7 +54,7 @@ export default function ResultsScreen() {
             <span>{bankrupt ? "Restaurante en quiebra" : chefLeft ? "Servicio cerrado" : "Restaurante triunfador"}</span>
           </div>
 
-          <div className={styles.card}>
+          <div className={`${styles.card} ${chefResult ? styles.withChef : ""}`}>
             <img className={styles.frame} src={FINAL + "endframe.svg"} alt="" aria-hidden="true" draggable="false" />
             <img
               className={bankrupt ? styles.badCoins : styles.goodCoins}

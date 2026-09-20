@@ -8,7 +8,6 @@ const RegisterScreen = lazy(() => import("./screens/RegisterScreen.jsx"));
 const TurnScreen = lazy(() => import("./screens/TurnScreen.jsx"));
 const FinaleScreen = lazy(() => import("./screens/FinaleScreen.jsx"));
 const ResultsScreen = lazy(() => import("./screens/ResultsScreen.jsx"));
-const RulesScreen = lazy(() => import("./screens/RulesScreen.jsx"));
 const DevRefScreen = lazy(() => import("./screens/DevRefScreen.jsx"));
 const ProfileScreen = lazy(() => import("./screens/ProfileScreen.jsx"));
 const SettingsScreen = lazy(() => import("./screens/SettingsScreen.jsx"));
@@ -20,7 +19,6 @@ const SCREENS = {
   turn: TurnScreen,
   finale: FinaleScreen,
   results: ResultsScreen,
-  rules: RulesScreen,
   devref: DevRefScreen,
   profile: ProfileScreen,
   settings: SettingsScreen,
@@ -33,7 +31,7 @@ function Router() {
   // estado local aunque le toque al mismo jugador.
   const key = route === "turn" ? `turn-${turnNo}` : route;
   // El menú es un montaje a pantalla completa, sin el marco de tablet.
-  if (["menu", "login", "turn", "finale", "results"].includes(route)) {
+  if (["menu", "login", "turn", "finale", "results", "profile", "settings"].includes(route)) {
     return (
       <Suspense fallback={null}>
         <Active key={key} />

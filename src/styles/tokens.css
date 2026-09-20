@@ -13,6 +13,9 @@
   /* Tipografia */
   /* saturación de las ilustraciones de logros e insignias (1 = original; súbelo o bájalo aquí) */
   --art-saturate: 1.65;
+  /* tono cálido para que combinen con la paleta crema / coral: un poco de sepia y el matiz corrido hacia el naranja */
+  --art-tone: sepia(0.16) hue-rotate(-6deg) contrast(1.04) brightness(1.03);
+  --art-filter: saturate(var(--art-saturate)) var(--art-tone);
   --font-display: "Tuneo Much", "Satoshi Variable", system-ui, sans-serif;
   --font-body: "Satoshi Variable", system-ui, sans-serif;
 
@@ -89,48 +92,5 @@
   --press: 0.96;
 
   /* Foco accesible */
-  --focus-ring: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
-}
-
-/* ================= TEMA OSCURO (plano) ================= */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --paper: #221c1a;
-  --paper-2: #1a1513;
-  --card: #2e2723;
-  --ink: #f6ece0;
-  --ink-2: #b3a596;
-
-  --bg: var(--paper);
-  --bg-room: var(--paper-2);
-  --surface: var(--card);
-  --surface-2: #2a231f;
-  --surface-sunken: #1c1613;
-  --placeholder: #4a453f;
-  --text: var(--ink);
-  --text-soft: var(--ink-2);
-
-  --coral: #ff6a3d;
-  --coral-deep: #ff8a63;
-  --coral-tint: #4a2418;
-  --primary: var(--coral);
-  --primary-deep: var(--coral-deep);
-  --primary-tint: var(--coral-tint);
-  --on-primary: #24140d;
-  --secondary: #2fd0bf;
-  --secondary-tint: #123a36;
-  --on-secondary: #062420;
-
-  --hairline: #3d332c;
-  --line-ink: 2.5px solid var(--ink);
-  --line-ink-thin: 2px solid var(--ink);
-
-  --yellow-tint: #3e321a;
-  --lime-tint: #263a1c;
-  --teal-tint: #123a36;
-  --berry-tint: #3d2138;
-  --orange-tint: #43301a;
-
   --focus-ring: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
 }

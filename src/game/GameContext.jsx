@@ -32,7 +32,6 @@ const DEFAULTS = {
     music: true,
     musicVolume: 0.6,
     haptics: true,
-    theme: "light",
     orderInterval: DEFAULT_INTERVAL,
   },
   stats: { ...EMPTY_STATS },
@@ -46,7 +45,8 @@ function loadPersisted() {
     const p = JSON.parse(raw);
     return {
       profile: { ...DEFAULTS.profile, ...(p.profile || {}) },
-      settings: { ...DEFAULTS.settings, ...(p.settings || {}) },
+      // `theme` era del modo oscuro (ya no existe): se descarta si venía guardado
+      settings: (({ theme, ...rest }) => ({ ...DEFAULTS.settings, ...rest }))(p.settings || {}),
       stats: { ...DEFAULTS.stats, ...(p.stats || {}) },
     };
   } catch {
@@ -492,13 +492,6 @@ export function GameProvider({ children }) {
   useEffect(() => {
     persist(state);
   }, [state.profile, state.settings, state.stats]);
-
-  // tema
-  useEffect(() => {
-    const root = document.documentElement;
-    if (state.settings.theme === "dark") root.dataset.theme = "dark";
-    else delete root.dataset.theme;
-  }, [state.settings.theme]);
 
   // sonido y vibracion
   useEffect(() => {

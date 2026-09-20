@@ -127,7 +127,6 @@
   color: #fff;
   -webkit-text-stroke: calc(8px * var(--s)) var(--pj);
   paint-order: stroke fill;
-  text-shadow: 0 calc(6px * var(--s)) 0 rgb(0 0 0 / 0.35);
 }
 .text span { font-family: var(--font-body); font-weight: 900; font-size: calc(40px * var(--s)); color: #ffdb2a; }
 .bad .text span { color: #ff9a80; }

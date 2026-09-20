@@ -13,13 +13,9 @@ import {
   HELP_CARD_CHANCE,
   advanceGraph,
 } from "../game/board.js";
-import Button from "../components/Button.jsx";
 import Die from "../components/Die.jsx";
-import PressablePill from "../components/PressablePill.jsx";
-import Tag from "../components/Tag.jsx";
 import PlayerRing from "../components/PlayerRing.jsx";
 import EpicMoment from "../components/EpicMoment.jsx";
-import VacationIcon from "../components/VacationIcon.jsx";
 import OrderScene from "./OrderScene.jsx";
 import GameSettings from "../components/GameSettings.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
@@ -71,12 +67,15 @@ export default function TurnScreen() {
     dispatch({ type: "applyMove", name: currentName, square: nodeId });
     const out = outcomeFor(nodeId, currentName);
     if (out.event) dispatch({ type: "noteEvent", name: currentName });
-    // evento positivo: además, con cierta probabilidad, le toca sacar una carta de ayuda física de la pila
-    if (out.tag === "y" && nodeId !== FINAL_NODE && Math.random() < HELP_CARD_CHANCE) out.helpCard = true;
-    if (out.tag === "a" && nodeId !== FINAL_NODE) {
+    // evento positivo: además, con cierta probabilidad, gana una carta de poder (la misma tarjeta de la casilla de carta)
+    const bonusCard = out.tag === "y" && nodeId !== FINAL_NODE && Math.random() < HELP_CARD_CHANCE;
+    if ((out.tag === "a" && nodeId !== FINAL_NODE) || bonusCard) {
       const card = POWER_CARDS[Math.floor(Math.random() * POWER_CARDS.length)];
       out.card = card;
+      out.bonus = bonusCard;
       dispatch({ type: "givePowerCard", name: currentName, card });
+    }
+    if (out.tag === "a" && nodeId !== FINAL_NODE) {
       sfx.win();
     } else if (out.event) {
       const bad = out.tag === "b";
@@ -172,10 +171,7 @@ export default function TurnScreen() {
                 <PlayerRing index={i} characterId={p.characterId} />
                 <span className={styles.seatName}>{p.name}</span>
                 {finishedOf[p.name] && (
-                  <span className={styles.helperTag}>
-                    <VacationIcon className={styles.helperHat} />
-                    De vacaciones
-                  </span>
+                  <span className={styles.helperTag}>De vacaciones</span>
                 )}
               </div>
             )}
@@ -232,11 +228,15 @@ export default function TurnScreen() {
           </span>
         </div>
         {/* dado + botón */}
+        {phase !== "fork" && (
+          <div
+            className={`${styles.die} ${phase === "result" ? (result?.card ? styles.dieAsideCard : styles.dieAside) : ""}`}
+          >
+            <Die value={dieValue} roll={rollNo} />
+          </div>
+        )}
         {!cardOpen && (
           <>
-            <div className={styles.die}>
-              <Die value={dieValue} roll={rollNo} />
-            </div>
             {phase === "idle" && (
               <button className={styles.roll} onClick={roll} disabled={blocked}>
                 <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
@@ -262,61 +262,67 @@ export default function TurnScreen() {
         )}
 
         {cardOpen && (
-          <div className={styles.card}>
-            <div className={styles.cardIn}>
-              {phase === "fork" && fork && (
-                <>
-                  <Tag tone="y">El camino se divide en {casillaLabel(fork.from)}</Tag>
-                  <p className={styles.cardText}>
+          <div className={styles.cardLayer} key={phase}>
+            {/* bifurcación: un cuadro chico por rama */}
+            {phase === "fork" && fork && (
+              <>
+                <div className={styles.forkHead}>
+                  <span className={styles.forkTitle}>El camino se divide en {casillaLabel(fork.from)}</span>
+                  <span className={styles.forkText}>
                     Sacaste un {fork.roll} y te quedan {fork.steps} pasos. ¿Por cuál rama sigues?
-                  </p>
-                  <div className={styles.opts}>
-                    {fork.options.map((id) => (
-                      <PressablePill key={id} onClick={() => chooseFork(id)}>
-                        {BRANCH_LABEL[id] || `Rama ${id}`}
-                        {SHORTCUT_NODES.has(id) && !/atajo/i.test(BRANCH_LABEL[id] || "") ? " · atajo" : ""}
-                        {` · casilla ${id}`}
-                      </PressablePill>
-                    ))}
+                  </span>
+                </div>
+                <div className={styles.duo}>
+                  {fork.options.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`${styles.opt} ${styles.optBtn}`}
+                      onClick={() => {
+                        sfx.tap();
+                        chooseFork(id);
+                      }}
+                    >
+                      <img className={styles.frameArt} src={COMMON + "smallrectangleframe.svg"} alt="" aria-hidden="true" draggable="false" />
+                      <span className={styles.optIn}>
+                        <span className={styles.branch}>{BRANCH_LABEL[id] || `Rama ${id}`}</span>
+                        <span className={styles.branchSub}>
+                          Casilla {id}
+                          {SHORTCUT_NODES.has(id) && !/atajo/i.test(BRANCH_LABEL[id] || "") ? " · atajo" : ""}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* resultado: el dado queda a la izquierda y el cuadro dice qué pasó (la casilla ya se ve arriba) */}
+            {phase === "result" && result && (
+              <>
+                <div className={`${styles.rect} ${result.card ? styles.rectCard : ""}`}>
+                  <img className={styles.frameArt} src={COMMON + "rectangleframe.svg"} alt="" aria-hidden="true" draggable="false" />
+                  <div className={styles.rectIn}>
+                    {result.event && <span className={styles.eyebrow}>{result.title}</span>}
+                    <p className={styles.title}>{result.event ? result.event.title : result.title}</p>
+                    <p className={styles.text}>{result.event ? result.event.text : result.text}</p>
+                    {result.bonus && <p className={styles.bonus}>¡Y ganaste una carta!</p>}
                   </div>
-                </>
-              )}
-              {phase === "result" && result && (
-                <>
-                  <div className={styles.resultHead}>
-                    <Tag tone={result.tag}>
-                      {result.node === FINAL_NODE ? "FIN" : `Casilla ${result.node}`}
-                    </Tag>
-                    <span className={styles.rolled}>Sacaste un {dieValue}</span>
-                  </div>
-                  <p className={styles.cardTitle}>{result.title}</p>
-                  {result.text && <p className={styles.cardText}>{result.text}</p>}
-                  {result.event && (
-                    <div className={styles.event}>
-                      <span className={styles.eventTitle}>{result.event.title}</span>
-                      <span className={styles.eventText}>{result.event.text}</span>
-                    </div>
-                  )}
-                  {result.helpCard && (
-                    <div className={styles.help}>
-                      <span className={styles.eventTitle}>Carta de ayuda</span>
-                      <span className={styles.eventText}>Saca una carta de ayuda de la pila física.</span>
-                    </div>
-                  )}
-                  <Button
-                    variant="primary"
-                    wide
-                    disabled={blocked}
-                    onClick={() => {
-                      sfx.tap();
-                      dispatch({ type: "nextTurn" });
-                    }}
-                  >
-                    {blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}
-                  </Button>
-                </>
-              )}
-            </div>
+                </div>
+                <button
+                  type="button"
+                  className={styles.next}
+                  disabled={blocked}
+                  onClick={() => {
+                    sfx.tap();
+                    dispatch({ type: "nextTurn" });
+                  }}
+                >
+                  <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
+                  <span>{blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
