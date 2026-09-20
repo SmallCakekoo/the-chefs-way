@@ -116,3 +116,15 @@ p {
     scroll-behavior: auto !important;
   }
 }
+
+/* SVG en línea: uniones y cortes de trazo redondeados (nada de puntas filosas). */
+svg path,
+svg rect,
+svg polygon,
+svg polyline,
+svg line,
+svg circle,
+svg ellipse {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}

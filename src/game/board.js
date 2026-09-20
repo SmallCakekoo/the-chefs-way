@@ -1,6 +1,11 @@
 export const MAX_PLAYERS = 4;
 export const MIN_PLAYERS = 2;
-export const FINAL_NODE = "FIN";
+// Casillas de salida y de meta del tablero (50 casillas).
+export const START_NODE = "1";
+export const FINAL_NODE = "50";
+
+// Probabilidad de que un evento positivo también pida una carta de ayuda física de la pila (fácil de ajustar).
+export const HELP_CARD_CHANCE = 0.2;
 
 // Personajes-alimento (arte en public/alimentos/, PNG con carita, plano).
 // La escala de los PNG varia: encuadrar siempre con object-fit: contain.
@@ -34,6 +39,25 @@ export const faceStyle = (c) =>
   c.face
     ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": 1.75 / c.face[2], "--far": c.face[2] }
     : undefined;
+// Ingredientes (arte en public/ingredients/, SVG; en disco la carpeta va en minúscula: en Netlify importa). Tres bases + ocho ingredientes.
+// Nota: el archivo de la tortilla se llama "toritillataco.svg" (así está en la carpeta).
+const I = (file) => `/ingredients/${file}.svg`;
+export const INGREDIENTS = [
+  // fondo por grupo: bases #81695F · pollo, carne, cebolla, tomate #FCD73D · queso, huevo #50EBC9 · lechuga, aguacate #78D6F6
+  { id: "pan-sandwich", name: "Pan", src: I("breadsandwich"), tint: "#81695f", base: true },
+  { id: "pan-hamburguesa", name: "Pan", src: I("breadburger"), tint: "#81695f", base: true },
+  { id: "tortilla", name: "Tortilla", src: I("toritillataco"), tint: "#81695f", base: true },
+  { id: "pollo", name: "Pollo", src: I("chicken"), tint: "#fcd73d" },
+  { id: "carne", name: "Carne", src: I("meat"), tint: "#fcd73d" },
+  { id: "queso", name: "Queso", src: I("cheese"), tint: "#50ebc9" },
+  { id: "lechuga", name: "Lechuga", src: I("lettuce"), tint: "#78d6f6" },
+  { id: "tomate", name: "Tomate", src: I("tomato"), tint: "#fcd73d" },
+  { id: "aguacate", name: "Aguacate", src: I("avocado"), tint: "#78d6f6" },
+  { id: "huevo", name: "Huevo", src: I("egg"), tint: "#50ebc9" },
+  { id: "cebolla", name: "Cebolla", src: I("onion"), tint: "#fcd73d" },
+];
+export const ingredientById = (id) => INGREDIENTS.find((i) => i.id === id) || INGREDIENTS[0];
+
 export const characterById = (id) =>
   CHARACTERS.find((c) => c.id === id) ||
   CLIENTS.find((c) => c.id === id) ||
@@ -41,81 +65,57 @@ export const characterById = (id) =>
 export const PALETTE = CHARACTERS.map((c) => c.tint);
 
 /* ============================================================
-   Grafo del tablero "The Chef's Way" — transcrito del mapa.
-   c: color/tipo · O naranja (libre) · A aguamarina (objeto +)
-                   · Y amarillo (evento) · B negro (objeto -)
-   next: nodos alcanzables. Con >1 nodo, la app pregunta la rama.
-   (Un visto bueno del equipo; faltan dos, pero se juega con este.)
+   Grafo del tablero "The Chef's Way": 50 casillas y dos bifurcaciones.
+   c: tipo de casilla · O normal (no pasa nada) · Y evento positivo
+                      · B evento negativo · A carta de poder
+   next: casillas alcanzables. Con >1, la app pregunta la rama.
+   - Bifurcación en la 12: 13 (camino largo) o 21 (atajo directo).
+   - Bifurcación en la 33: 34A (más corta) o 34B (más larga); las dos se unen en la 44.
+   La 50 es la meta (cuenta como evento positivo, pero llegar dispara al Chef Maestro).
    ============================================================ */
-export const GRAPH = {
-  INICIO: { c: null, next: ["1"] },
-  "1": { c: "O", next: ["2"] },
-  "2": { c: "A", next: ["3a", "3b"] },
-  "3a": { c: "O", next: ["4a"] },
-  "3b": { c: "O", next: ["4b", "4a"] },
-  "4a": { c: "Y", next: ["5a"] },
-  "4b": { c: "B", next: ["5b"] },
-  "5a": { c: "O", next: ["6a"] },
-  "5b": { c: "A", next: ["7"] },
-  "6a": { c: "A", next: ["7"] },
-  "7": { c: "O", next: ["8"] },
-  "8": { c: "O", next: ["9"] },
-  "9": { c: "Y", next: ["10"] },
-  "10": { c: "Y", next: ["11"] },
-  "11": { c: "A", next: ["12"] },
-  "12": { c: "Y", next: ["13a", "13b"] },
-  "13a": { c: "B", next: ["14a"] },
-  "13b": { c: "B", next: ["14b"] },
-  "14a": { c: "Y", next: ["15a", "15c"] },
-  "14b": { c: "O", next: ["15b"] },
-  "15a": { c: "A", next: ["16a"] },
-  "15b": { c: "O", next: ["18"] },
-  "15c": { c: "A", next: ["17"] },
-  "16a": { c: "Y", next: ["17"] },
-  "17": { c: "O", next: ["18"] },
-  "18": { c: "A", next: ["19"] },
-  "19": { c: "Y", next: ["20a", "20b"] },
-  "20a": { c: "O", next: ["21"] },
-  "20b": { c: "B", next: ["22"] },
-  "21": { c: "O", next: ["22"] },
-  "22": { c: "A", next: ["23"] },
-  "23": { c: "A", next: ["24"] },
-  "24": { c: "O", next: ["25a", "25b"] },
-  "25a": { c: "Y", next: ["26a"] },
-  "25b": { c: "A", next: ["26b"] },
-  "26a": { c: "B", next: ["28a"] },
-  "26b": { c: "Y", next: ["27b", "27c"] },
-  "27b": { c: "A", next: ["28a"] },
-  "27c": { c: "B", next: ["28b"] },
-  "28a": { c: "B", next: ["29"] },
-  "28b": { c: "Y", next: ["29"] },
-  "29": { c: "O", next: ["30"] },
-  "30": { c: "A", next: ["31"] },
-  "31": { c: "O", next: ["32"] },
-  "32": { c: "O", next: ["33"] },
-  "33": { c: "B", next: ["34a", "34b"] },
-  "34a": { c: "O", next: ["35a"] },
-  "34b": { c: "B", next: ["35b"] },
-  "35a": { c: "A", next: ["36"] },
-  "35b": { c: "Y", next: ["FIN"] },
-  "36": { c: "O", next: ["37"] },
-  "37": { c: "Y", next: ["38"] },
-  "38": { c: "O", next: ["39"] },
-  "39": { c: "A", next: ["40"] },
-  "40": { c: "B", next: ["41"] },
-  "41": { c: "O", next: ["42"] },
-  "42": { c: "Y", next: ["43"] },
-  "43": { c: "A", next: ["FIN"] },
-  FIN: { c: null, next: [] },
-};
+const TYPE = {};
+const setTypes = (c, ids) => ids.forEach((id) => (TYPE[id] = c));
+setTypes("O", ["1", "2", "3", "4", "6", "7", "8", "9", "11", "12", "13", "22", "24", "25", "27", "29", "31", "32", "34A", "35A", "39A", "41A", "34B", "36B", "37B", "39B", "40B", "42B", "43B", "45", "46", "48", "49"]);
+setTypes("Y", ["5", "17", "21", "26", "30", "37A", "35B", "41B", "50"]);
+setTypes("B", ["14", "16", "18", "20", "23", "36A", "40A", "38B"]);
+setTypes("A", ["10", "15", "19", "28", "33", "38A", "44", "47"]);
+
+// conexiones: por defecto cada casilla lleva a la siguiente de su tramo
+const NEXT = {};
+const chain = (ids) => ids.forEach((id, i) => (NEXT[id] = i < ids.length - 1 ? [ids[i + 1]] : []));
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => String(a + i));
+chain(range(1, 12));
+chain([...range(13, 20), "21"]);
+chain(range(21, 33));
+chain(["34A", "35A", "36A", "37A", "38A", "39A", "40A", "41A", "44"]);
+chain(["34B", "35B", "36B", "37B", "38B", "39B", "40B", "41B", "42B", "43B", "44"]);
+chain(range(44, 50));
+NEXT["12"] = ["13", "21"]; // atajo directo a la 21
+NEXT["33"] = ["34A", "34B"];
+NEXT["20"] = ["21"];
+NEXT["41A"] = ["44"];
+NEXT["43B"] = ["44"];
+NEXT["50"] = [];
+
+export const GRAPH = Object.fromEntries(
+  Object.keys(TYPE).map((id) => [id, { c: TYPE[id], next: NEXT[id] || [] }])
+);
 
 // ramas que son atajo (para la insignia "El atajero")
-export const SHORTCUT_NODES = new Set(["4b", "5b", "15b", "15c", "20b", "27b", "34b"]);
+export const SHORTCUT_NODES = new Set(["21", "34A"]);
 
-// progreso (distancia mínima desde INICIO) para ordenar / "La tortuga"
+// nombre de cada rama en el cuadro de bifurcación
+export const BRANCH_LABEL = {
+  "13": "Camino largo",
+  "21": "Atajo",
+  "34A": "Rama A",
+  "34B": "Rama B",
+};
+
+// progreso (distancia mínima desde la salida) para ordenar / "La tortuga"
 export const PROGRESS = (() => {
-  const dist = { INICIO: 0 };
-  const q = ["INICIO"];
+  const dist = { [START_NODE]: 0 };
+  const q = [START_NODE];
   while (q.length) {
     const n = q.shift();
     for (const m of GRAPH[n].next) {
@@ -128,13 +128,17 @@ export const PROGRESS = (() => {
   return dist;
 })();
 
-/** Avanza `steps` aristas desde `from`. Devuelve {at} o {branch,options,steps}. */
+/** Avanza `steps` casillas desde `from`.
+ *  - {at}: cayó en `at`.
+ *  - {branch, options, steps}: PASA por una casilla que se divide (12 o 33) y le quedan `steps`: hay que elegir rama.
+ *    Si el movimiento termina justo en la 12 o la 33, no hay decisión.
+ *  - {overshoot, left}: se pasaría de la meta por `left` pasos: no avanza hasta sacar el número exacto. */
 export function advanceGraph(from, steps) {
   let node = from;
   let left = steps;
   while (left > 0) {
     const nx = GRAPH[node]?.next || [];
-    if (nx.length === 0) return { at: node };
+    if (nx.length === 0) return { at: from, overshoot: true, left };
     if (nx.length > 1) return { branch: node, options: nx, steps: left };
     node = nx[0];
     left -= 1;
@@ -145,35 +149,51 @@ export function advanceGraph(from, steps) {
 export const CASILLA_INFO = {
   O: {
     tag: "o",
-    label: "Casilla libre",
-    text: "Nada que hacer aquí. Pasa el dispositivo al siguiente jugador.",
+    label: "Casilla normal",
+    text: "No pasa nada. Pasa el dispositivo al siguiente jugador.",
   },
   A: {
     tag: "a",
-    label: "Objeto positivo",
-    text: "Roba una carta de la pila de AYUDA y tira el dado de color en la mesa.",
+    label: "Carta de poder",
+    text: "Ganas una carta de poder. Queda en tu mano para usarla cuando quieras.",
   },
   Y: {
     tag: "y",
-    label: "Evento",
-    text: "La app lanza un evento para toda la mesa:",
+    label: "Evento positivo",
+    text: "La app lanza un evento positivo:",
   },
   B: {
     tag: "b",
-    label: "Objeto negativo",
-    text: "Roba una carta de la pila de SABOTAJE y tira el dado de color en la mesa.",
+    label: "Evento negativo",
+    text: "La app lanza un evento negativo:",
   },
 };
 
-// Eventos concretos para las casillas tipo Y. Borrador: el equipo confirma.
+// Eventos positivos (casillas tipo Y). Borrador: el equipo confirma.
 export const EVENTS = [
-  { title: "Hora pico", text: "Llegan dos pedidos seguidos. El siguiente jugador tira dos veces." },
-  { title: "Se cayó un plato", text: "El jugador con más casillas recorridas retrocede 2." },
   { title: "Propina generosa", text: "Todos los jugadores avanzan 1 casilla." },
-  { title: "Inspección sorpresa", text: "Nadie roba cartas de sabotaje hasta tu próximo turno." },
   { title: "Cambio de menú", text: "El siguiente pedido que salga vale doble para el empleado del mes." },
   { title: "Turno doble", text: "Vuelve a tirar el dado en este mismo turno." },
+  { title: "Día de suerte", text: "El restaurante gana 10 monedas." },
 ];
+
+// Eventos negativos (casillas tipo B). Borrador: el equipo confirma.
+export const NEGATIVE_EVENTS = [
+  { title: "Se cayó un plato", text: "Retrocedes 2 casillas." },
+  { title: "Hora pico", text: "Llegan dos pedidos seguidos. El siguiente jugador tira dos veces." },
+  { title: "Inspección sorpresa", text: "Nadie puede usar cartas de poder hasta tu próximo turno." },
+  { title: "Fila en la caja", text: "Pierdes tu próximo turno." },
+  { title: "Ingrediente equivocado", text: "El restaurante pierde 10 monedas." },
+];
+
+// Cartas de poder (solo positivas). Arte en public/powercards/.
+export const POWER_CARDS = ["power card 1", "power card 2", "power card 3"];
+// Qué hace cada carta. PROVISIONAL: texto de relleno hasta que el equipo confirme los efectos.
+export const POWER_CARD_INFO = {
+  "power card 1": { name: "Lorem ipsum", text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit." },
+  "power card 2": { name: "Dolor sit amet", text: "Sed do eiusmod tempor incididunt ut labore et dolore." },
+  "power card 3": { name: "Consectetur", text: "Ut enim ad minim veniam, quis nostrud exercitation." },
+};
 
 // Pips del dado (coordenadas en viewBox 0..100)
 export const DIE_PIPS = {

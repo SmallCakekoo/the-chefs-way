@@ -243,14 +243,9 @@
   top: 587px;
   width: 169px;
   height: 165px;
+  display: grid;
+  place-items: center;
 }
-.die > div {
-  width: 169px;
-  height: 165px;
-  border-radius: 34px;
-  box-shadow: inset 0 0 0 6px #8f5a54, 0 8px 0 #764944;
-}
-.die > div svg { width: 112px; height: 112px; }
 .roll {
   position: absolute;
   left: 778px;
@@ -373,6 +368,16 @@
   border-radius: var(--r-sm);
   padding: 0.7rem 0.85rem;
 }
+/* aviso de carta de ayuda (20% de los eventos positivos) */
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--secondary-tint);
+  border-radius: var(--r-sm);
+  padding: 0.7rem 0.85rem;
+  box-shadow: inset 0 0 0 2px var(--secondary);
+}
 .eventTitle {
   font-family: var(--font-body);
   font-weight: 800;
@@ -422,3 +427,48 @@
   .seatOn > :first-child { animation: none; }
   .intro * { animation: none !important; }
 }
+
+/* carta de poder que acaba de ganar el jugador: sale volando junto a la tarjeta de resultado */
+.won {
+  position: absolute;
+  left: 1300px;
+  top: 470px;
+  width: 210px;
+  height: auto;
+  z-index: 4;
+  border-radius: 22px;
+  box-shadow: 0 0 0 9px var(--pj, #fff2ec), 0 14px 16px 4px rgb(60 30 25 / 0.3);
+  rotate: 8deg;
+  pointer-events: none;
+  animation: wonIn 0.8s cubic-bezier(0.34, 1.6, 0.64, 1) 0.15s both, wonFloat 2.6s ease-in-out 1s infinite;
+}
+@keyframes wonIn {
+  from { scale: 0.2; translate: -160px 160px; rotate: -40deg; opacity: 0; }
+}
+@keyframes wonFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -12px; }
+}
+
+/* insignia provisional de "de vacaciones": el jugador ya llegó a la meta y solo colabora (no tira el dado) */
+.helperTag {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 18px 4px 8px;
+  border-radius: 999px;
+  background: var(--yellow);
+  border: 4px solid var(--ink);
+  font: 900 24px var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.helperHat { width: 36px; height: auto; flex: none; }
+.seat_tl .helperTag, .seat_tr .helperTag { top: calc(100% + 56px); }
+.seat_bl .helperTag, .seat_br .helperTag { bottom: calc(100% + 56px); }
+.seatHelper > :first-child { filter: saturate(0.6); }

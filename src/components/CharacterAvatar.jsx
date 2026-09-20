@@ -1,4 +1,4 @@
-import { characterById, faceStyle } from "../game/board.js";
+import { characterById, ingredientById, faceStyle } from "../game/board.js";
 import styles from "./CharacterAvatar.module.css";
 
 /** Ficha redonda con el personaje-alimento. size: sm | md | lg | xl.
@@ -8,8 +8,9 @@ export default function CharacterAvatar({
   size = "md",
   shape = "circle",
   className = "",
+  ingredient = false, // true: `id` es un ingrediente (public/Ingredients), no un personaje
 }) {
-  const c = characterById(id);
+  const c = ingredient ? ingredientById(id) : characterById(id);
   return (
     <span
       className={[styles.wrap, styles[size], styles[shape], className]

@@ -2,15 +2,18 @@
    no solo el ganador. Se reparten sin repetir. Borrador para desarrollo. */
 import { PROGRESS } from "./board.js";
 
+// arte en public/insignias/ (un archivo por insignia; "¿Con suerte?" está guardado como "¿Con suerte_.svg")
+const B = (file) => encodeURI(`/insignias/${file}.svg`);
+
 export const BADGES = [
-  { id: "empleado-del-mes", icon: "queso", name: "Empleado del mes", desc: "Primero en llegar a FIN." },
-  { id: "manos-rapidas", icon: "huevo", name: "Manos rápidas", desc: "Más pedidos entregados." },
-  { id: "el-atajero", icon: "cebolla", name: "El atajero", desc: "Tomó más atajos en las bifurcaciones." },
-  { id: "imán-de-eventos", icon: "tomate", name: "Imán de eventos", desc: "Cayó en más casillas de evento." },
-  { id: "con-suerte", icon: "taco", name: "Con suerte", desc: "Sacó más seises." },
-  { id: "la-tortuga", icon: "aguacate", name: "La tortuga", desc: "Se quedó más atrás en el tablero." },
-  { id: "el-fiel", icon: "pan", name: "El fiel", desc: "Nunca faltó al servicio." },
-  { id: "corazón-de-cocina", icon: "carne", name: "Corazón de cocina", desc: "Aguantó hasta el final." },
+  { id: "empleado-del-mes", img: B("Empleado del mes"), name: "Empleado del mes", desc: "Primero en llegar a FIN." },
+  { id: "manos-rapidas", img: B("Manos rápidas"), name: "Manos rápidas", desc: "Más pedidos entregados." },
+  { id: "el-atajero", img: B("El atajero"), name: "El atajero", desc: "Tomó más atajos en las bifurcaciones." },
+  { id: "imán-de-eventos", img: B("Imán de eventos"), name: "Imán de eventos", desc: "Cayó en más casillas de evento." },
+  { id: "con-suerte", img: B("¿Con suerte_"), name: "Con suerte", desc: "Sacó más seises." },
+  { id: "la-tortuga", img: B("La tortuga"), name: "La tortuga", desc: "Se quedó más atrás en el tablero." },
+  { id: "el-fiel", img: B("El fiel"), name: "El fiel", desc: "Nunca faltó al servicio." },
+  { id: "corazón-de-cocina", img: B("Corazón de cocina"), name: "Corazón de cocina", desc: "Aguantó hasta el final." },
 ];
 
 /**
