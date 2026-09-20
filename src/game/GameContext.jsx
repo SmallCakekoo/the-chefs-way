@@ -6,18 +6,18 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { FINAL_NODE, MIN_PLAYERS, CHARACTERS } from "./board.js";
+import { FINAL_NODE, START_NODE, MIN_PLAYERS, CHARACTERS } from "./board.js";
 import { EMPTY_STATS } from "./achievements.js";
 import {
   intervalMs,
   spawnBatch,
-  makeFinaleOrder,
   DEFAULT_INTERVAL,
   COIN_START,
   COIN_REWARD,
   COIN_PENALTY,
 } from "./orders.js";
 import { awardBadges } from "./badges.js";
+import { CHEF, makeChefRecipe, mutateRecipe, chefCoinsFor } from "./chef.js";
 import { sfx, setSfxEnabled, setHapticsEnabled } from "../lib/sfx.js";
 import { setMusicEnabled, setMusicVolume, armMusic } from "../lib/music.js";
 
@@ -91,6 +91,9 @@ function makeInitial() {
     badges: null,
     coins: COIN_START,
     bankrupt: false,
+    chef: null, // pedido del Chef Maestro: { attempt, title, recipe, changed, failures }
+    chefResult: null, // { stars, attempt, left } cuando el Chef ya terminó (estrellas o "se fue")
+    chefStartedAt: 0,
     ...p,
   };
 }
@@ -148,6 +151,18 @@ function bankruptGame(state) {
   };
 }
 
+// pasa al siguiente jugador que sigue jugando (los ayudantes se saltan)
+function advanceTurn(state) {
+  if (state.order.every((n) => state.finishedOf[n])) {
+    return finishGame(state);
+  }
+  let turnIdx = state.turnIdx;
+  do {
+    turnIdx = (turnIdx + 1) % state.order.length;
+  } while (state.finishedOf[state.order[turnIdx]]);
+  return { ...state, turnIdx, turnNo: state.turnNo + 1 };
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case "navigate":
@@ -171,7 +186,7 @@ function reducer(state, action) {
       const finishedOf = {};
       const perPlayer = {};
       order.forEach((n) => {
-        posOf[n] = "INICIO";
+        posOf[n] = START_NODE;
         finishedOf[n] = false;
         perPlayer[n] = { orders: 0, events: 0, shortcuts: 0, sixes: 0, rolls: 0 };
       });
@@ -190,6 +205,9 @@ function reducer(state, action) {
         badges: null,
         coins: COIN_START,
         bankrupt: false,
+        chef: null,
+        chefResult: null,
+        chefStartedAt: 0,
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
         stats: { ...state.stats, gamesHosted: state.stats.gamesHosted + 1 },
         route: "turn",
@@ -240,28 +258,98 @@ function reducer(state, action) {
       if (square === FINAL_NODE && !state.finishedOf[name]) {
         finishedOf = { ...state.finishedOf, [name]: true };
         finishOrder = [...state.finishOrder, name];
-        // primero en llegar a FIN: la mesa entera cocina el super pedido
-        if (state.finishOrder.length === 0) {
-          extra = {
-            orders: [...state.orders, makeFinaleOrder()],
-            nextOrderAt: null,
-            route: "finale",
-          };
+        // el que llega pasa a ser ayudante (ya no tira el dado) y el Chef Maestro visita la mesa.
+        // Hay un intento por cada jugador que llega, mientras el pedido no se haya completado.
+        if (!state.chefResult) {
+          const attempt = finishOrder.length;
+          let chef;
+          if (!state.chef) {
+            const r = makeChefRecipe();
+            chef = { attempt, title: r.title, recipe: r.recipe, changed: null, failures: 0 };
+          } else {
+            const m = mutateRecipe(state.chef.recipe);
+            chef = { ...state.chef, attempt, recipe: m.recipe, changed: m.changed };
+          }
+          extra = { chef, route: "finale", chefStartedAt: Date.now() };
         }
       }
       return { ...state, posOf, finishedOf, finishOrder, ...extra };
     }
 
-    case "nextTurn": {
-      if (state.order.every((n) => state.finishedOf[n])) {
-        return finishGame(state);
+    case "nextTurn":
+      return advanceTurn(state);
+
+    // veredicto del Chef Maestro (0 a 5 estrellas)
+    case "chefVerdict": {
+      const chef = state.chef;
+      if (!chef) return state;
+      const { stars } = action;
+      if (stars >= 1) {
+        // completado: suma monedas y se cierra la partida (igual que antes con el super pedido)
+        return finishGame({
+          ...state,
+          coins: state.coins + chefCoinsFor(stars),
+          chef: { ...chef, done: true },
+          chefResult: { stars, attempt: chef.attempt, left: false },
+        });
       }
-      let turnIdx = state.turnIdx;
-      do {
-        turnIdx = (turnIdx + 1) % state.order.length;
-      } while (state.finishedOf[state.order[turnIdx]]);
-      return { ...state, turnIdx, turnNo: state.turnNo + 1 };
+      // 0 estrellas: fallo, cuesta monedas
+      let coins = state.coins - CHEF.failCost;
+      const failures = (chef.failures || 0) + 1;
+      // un intento por jugador que llega: si el último llegó y falla, el Chef se va
+      if (chef.attempt >= state.order.length) {
+        coins -= CHEF.leavePenalty;
+        const done = {
+          ...state,
+          coins,
+          chef: { ...chef, failures, done: true },
+          chefResult: { stars: 0, attempt: chef.attempt, left: true },
+        };
+        return coins <= 0 ? bankruptGame(done) : finishGame(done);
+      }
+      // sigue la partida: los relojes de pedidos esperaron mientras el Chef estaba en la mesa
+      const elapsed = Date.now() - (state.chefStartedAt || Date.now());
+      const orders = state.orders.map((o) =>
+        o.status === "pending"
+          ? {
+              ...o,
+              dueAt: o.dueAt ? o.dueAt + elapsed : o.dueAt,
+              prepUntil: o.prepUntil ? o.prepUntil + elapsed : o.prepUntil,
+            }
+          : o
+      );
+      const next = {
+        ...state,
+        coins,
+        orders,
+        chef: { ...chef, failures },
+        nextOrderAt: state.nextOrderAt ? state.nextOrderAt + elapsed : state.nextOrderAt,
+        route: "turn",
+      };
+      return coins <= 0 ? bankruptGame(next) : advanceTurn(next);
     }
+
+    // una casilla de carta de poder: el jugador guarda la carta en su mano
+    case "givePowerCard":
+      return {
+        ...state,
+        players: state.players.map((p) =>
+          p.name === action.name
+            ? { ...p, powerCards: [...(p.powerCards || []), action.card] }
+            : p
+        ),
+      };
+
+    // el jugador usa una carta (la arrastra al centro): sale de su mano. El efecto lo define el equipo.
+    case "usePowerCard":
+      return {
+        ...state,
+        players: state.players.map((p) =>
+          p.name === action.name
+            ? { ...p, powerCards: (p.powerCards || []).filter((_, i) => i !== action.index) }
+            : p
+        ),
+      };
 
     case "menuIntroDone":
       return state.menuIntro ? { ...state, menuIntro: false } : state;
@@ -285,12 +373,21 @@ function reducer(state, action) {
         badges: null,
         coins: COIN_START,
         bankrupt: false,
+        chef: null,
+        chefResult: null,
+        chefStartedAt: 0,
         route: "menu",
       };
 
     case "spawnOrders": {
       if (!state.nextOrderAt) return state;
-      const batch = spawnBatch(state.orderSeq, state.order);
+      // quien ya llegó a la meta es ayudante: los pedidos se asignan solo a quienes siguen jugando
+      const playing = state.order.filter((n) => !state.finishedOf[n]);
+      const batch = spawnBatch(
+        state.orderSeq,
+        playing.length ? playing : state.order,
+        state.orders.filter((o) => o.status === "pending").map((o) => o.cat)
+      );
       return {
         ...state,
         orders: [...state.orders, ...batch.orders],
@@ -343,9 +440,14 @@ function reducer(state, action) {
           ? { ...o, status: "done", deliveredAt: Date.now() }
           : o
       );
-      // crédito de "manos rápidas" a quien(es) hicieron el pedido
+      // ¿qué tan bien salió? ✓ suma, ✕ resta: todo ✓ = +recompensa, todo ✕ = -recompensa
+      const items = target?.items || [];
+      const yes = items.filter((_, i) => target.check?.[i] === "yes").length;
+      const no = items.filter((_, i) => target.check?.[i] === "no").length;
+      const score = items.length ? (yes - no) / items.length : 1;
+      // crédito de "manos rápidas" a quien(es) hicieron el pedido (solo si salió mejor que mal)
       let perPlayer = state.perPlayer;
-      if (target?.assignees?.length) {
+      if (target?.assignees?.length && score > 0) {
         perPlayer = { ...perPlayer };
         target.assignees.forEach((n) => {
           const pp = perPlayer[n] || {};
@@ -356,9 +458,10 @@ function reducer(state, action) {
       if (target?.finale) {
         return finishGame({ ...state, orders, perPlayer });
       }
-      // entregado a tiempo: unas moneditas para el restaurante
-      const coins = state.coins + COIN_REWARD;
-      return { ...state, orders, perPlayer, coins };
+      // entregado: el restaurante gana o pierde moneditas según cómo quedó
+      const coins = state.coins + Math.round(COIN_REWARD * score);
+      const next = { ...state, orders, perPlayer, coins };
+      return coins <= 0 ? bankruptGame(next) : next;
     }
 
     case "setSetting":

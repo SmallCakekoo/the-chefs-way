@@ -1,12 +1,15 @@
 /* Logros / medallas. Ademas del "empleado del mes" hay medallas de jugador
    y medallas de host. Se calculan desde `stats` (persistido en GameContext).
-   `icon` usa un personaje-alimento (id de CHARACTERS) para mantener el estilo. */
+   `img` es la ilustración del logro (si falta, la pantalla muestra un marcador). */
+
+// arte en public/logros/ (un archivo por logro, con el título del logro como nombre)
+const L = (name) => encodeURI(`/logros/${name}.svg`);
 
 export const ACHIEVEMENTS = [
   {
     id: "primer-servicio",
     scope: "player",
-    icon: "huevo",
+    img: L("Primer servicio"),
     name: "Primer servicio",
     desc: "Termina tu primera partida.",
     test: (s) => s.gamesPlayed >= 1,
@@ -14,7 +17,7 @@ export const ACHIEVEMENTS = [
   {
     id: "empleado-del-mes",
     scope: "player",
-    icon: "queso",
+    img: L("Empleado del mes"),
     name: "Empleado del mes",
     desc: "Llega primero a FIN en una partida.",
     test: (s) => s.wins >= 1,
@@ -22,7 +25,7 @@ export const ACHIEVEMENTS = [
   {
     id: "doble-turno",
     scope: "player",
-    icon: "pollo",
+    img: L("Doble turno"),
     name: "Doble turno",
     desc: "Gana 2 partidas.",
     test: (s) => s.wins >= 2,
@@ -30,7 +33,7 @@ export const ACHIEVEMENTS = [
   {
     id: "cocina-curtida",
     scope: "player",
-    icon: "carne",
+    img: L("Cocina curtida"),
     name: "Cocina curtida",
     desc: "Juega 5 partidas.",
     test: (s) => s.gamesPlayed >= 5,
@@ -38,7 +41,7 @@ export const ACHIEVEMENTS = [
   {
     id: "dueno-del-local",
     scope: "host",
-    icon: "taco",
+    img: L("Dueño del local"),
     name: "Dueño del local",
     desc: "Organiza una partida con la mesa.",
     test: (s) => s.gamesHosted >= 1,
@@ -46,7 +49,7 @@ export const ACHIEVEMENTS = [
   {
     id: "servicio-completo",
     scope: "host",
-    icon: "pan",
+    img: L("Servicio completo"),
     name: "Servicio completo",
     desc: "Organiza 3 partidas.",
     test: (s) => s.gamesHosted >= 3,

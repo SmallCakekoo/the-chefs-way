@@ -33,7 +33,7 @@ function Router() {
   // estado local aunque le toque al mismo jugador.
   const key = route === "turn" ? `turn-${turnNo}` : route;
   // El menú es un montaje a pantalla completa, sin el marco de tablet.
-  if (route === "menu" || route === "login" || route === "turn") {
+  if (["menu", "login", "turn", "finale", "results"].includes(route)) {
     return (
       <Suspense fallback={null}>
         <Active key={key} />

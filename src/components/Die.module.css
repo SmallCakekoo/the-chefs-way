@@ -1,18 +1,97 @@
-.die {
-  align-self: center;
-  width: 112px;
-  height: 112px;
+/* Dado 3D solo con CSS. Borde grueso #2B2320 y sombra dura (sin blur). Colores de la cara: tokens. */
+.wrap {
+  --die-size: 132px;
+  --die-ink: #2b2320;
+  position: relative;
+  display: block;
+  width: var(--die-size);
+  height: var(--die-size);
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.wrap:focus-visible {
+  outline: 4px solid var(--yellow);
+  outline-offset: 10px;
   border-radius: 24px;
+}
+/* sombra dura en el piso: elipse plana, sin difuminar */
+.shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -20px;
+  width: calc(var(--die-size) * 0.95);
+  height: 24px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: var(--die-ink);
+  opacity: 0.3;
+}
+.scene {
+  position: absolute;
+  inset: 0;
+  perspective: 1100px;
+}
+.cube {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* asentarse: varias vueltas y frenar en la cara que salió */
+  transition: transform 1.5s cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+/* leve inclinación fija para que se vea que es un cubo, sin tapar el número */
+.scene { transform: rotateX(-18deg) rotateY(24deg); transform-style: preserve-3d; }
+
+.face {
+  /* 1px de traslape entre caras: las aristas se tocan y el cubo se ve sólido, sin huecos */
+  --half: calc(var(--die-size) / 2 - 1px);
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  place-items: center;
+  padding: 16px;
+  border: 7px solid var(--die-ink);
+  border-radius: 12px; /* esquinas casi rectas para que las caras se junten en las aristas */
+  background: var(--surface);
+  /* sombreado duro de la cara (sin blur) */
+  box-shadow: inset 0 -8px 0 rgb(43 35 32 / 0.1);
+  backface-visibility: hidden;
+}
+.f1 { transform: translateZ(var(--half)); }
+.f6 { transform: rotateY(180deg) translateZ(var(--half)); }
+.f2 { transform: rotateY(90deg) translateZ(var(--half)); }
+.f5 { transform: rotateY(-90deg) translateZ(var(--half)); }
+.f3 { transform: rotateX(90deg) translateZ(var(--half)); }
+.f4 { transform: rotateX(-90deg) translateZ(var(--half)); }
+
+.pip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--die-ink);
+}
+
+/* dado 2D: el dado plano de siempre (tamaño y aro del tablero) */
+.wrap2d { width: 169px; height: 165px; }
+.die2d {
+  align-self: center;
+  width: 169px;
+  height: 165px;
+  border-radius: 34px;
   display: grid;
   place-items: center;
   background: var(--surface);
-  box-shadow: inset 0 0 0 3px var(--ink);
+  box-shadow: inset 0 0 0 6px #8f5a54, 0 8px 0 #764944;
 }
-.die svg {
-  width: 68px;
-  height: 68px;
+.die2d svg {
+  width: 112px;
+  height: 112px;
 }
-.pip {
+.svgPip {
   fill: var(--ink);
 }
 .empty {
@@ -26,34 +105,20 @@
   animation: die-tumble 0.16s infinite ease-in-out;
 }
 @keyframes die-tumble {
-  0% {
-    rotate: -14deg;
-    scale: 0.9;
-  }
-  50% {
-    rotate: 14deg;
-    scale: 1.06;
-  }
-  100% {
-    rotate: -14deg;
-    scale: 0.9;
-  }
+  0% { rotate: -14deg; scale: 0.9; }
+  50% { rotate: 14deg; scale: 1.06; }
+  100% { rotate: -14deg; scale: 0.9; }
 }
-
 .settled {
   animation: die-settle 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes die-settle {
-  0% {
-    scale: 1.25;
-    rotate: -8deg;
-  }
-  60% {
-    scale: 0.95;
-    rotate: 3deg;
-  }
-  100% {
-    scale: 1;
-    rotate: 0deg;
-  }
+  0% { scale: 1.25; rotate: -8deg; }
+  60% { scale: 0.95; rotate: 3deg; }
+  100% { scale: 1; rotate: 0deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rolling, .settled { animation: none; }
+  .cube { transition-duration: 0.01s; }
 }

@@ -1,101 +1,179 @@
 import { useEffect } from "react";
 import { useGame } from "../game/GameContext.jsx";
-import Screen, { Pane } from "../components/Screen.jsx";
-import Button from "../components/Button.jsx";
-import Ribbon from "../components/Ribbon.jsx";
+import { characterById, faceStyle } from "../game/board.js";
 import Confetti from "../components/Confetti.jsx";
-import CharacterAvatar from "../components/CharacterAvatar.jsx";
-import SectionLabel from "../components/SectionLabel.jsx";
-import { BodyText } from "../components/Text.jsx";
+import ChefHat from "../components/ChefHat.jsx";
 import { sfx } from "../lib/sfx.js";
+import { useStageScale } from "./menuAssets.js";
 import styles from "./ResultsScreen.module.css";
 
+const FINAL = "/scenary/final/";
+const COMMON = "/scenary/common/";
+// Un color de pastilla por orden de registro (el rojo es el "orange" de los aros).
+const BANNERS = ["red", "blue", "green", "yellow"];
+const PLAYER_COLORS = ["#e2381a", "#1d8fd6", "#1aa97f", "#d19a00"];
+const SPARKS = [
+  [150, 187, 46],
+  [768, 201, 40],
+  [756, 370, 30],
+  [135, 365, 30],
+];
+
+/** Pantalla final (final/finalidea.svg): balance del restaurante a la izquierda, insignias de la mesa a la derecha. */
 export default function ResultsScreen() {
-  const { players, finishOrder, badges, bankrupt, coins, dispatch, navigate } =
-    useGame();
-  const byName = (n) => players.find((p) => p.name === n) || { name: n };
-  const winner = finishOrder[0] ? byName(finishOrder[0]) : null;
+  const { players, finishOrder, badges, bankrupt, coins, chefResult, dispatch, navigate } = useGame();
+  const scale = useStageScale();
+  const winner = finishOrder[0];
   const list = badges || [];
 
   useEffect(() => {
     if (!bankrupt) sfx.win();
   }, [bankrupt]);
 
+  // el Chef Maestro se resume primero; después el veredicto del restaurante
+  const chefLeft = chefResult?.left;
+  const chefStars = chefResult?.stars ?? 0;
+
+  const message = bankrupt
+    ? "Se acabaron las moneditas: demasiados pedidos se vencieron antes de entregarse."
+    : chefLeft
+      ? "El Chef se fue sin probar el plato y el restaurante perdió reputación. Aun así, la cocina sigue abierta."
+      : winner
+      ? `¡Cerraron el servicio! ${winner} fue el primero en llegar a FIN.`
+      : "¡Cerraron el servicio entre todos!";
+
   return (
-    <Screen layout="panes">
+    <main className={styles.root} style={{ "--s": scale }}>
       {!bankrupt && <Confetti />}
-      <Pane>
-        {bankrupt ? (
-          <Ribbon tone="ink">El restaurante quebró</Ribbon>
-        ) : (
-          <Ribbon tone="yellow">Empleado del mes</Ribbon>
-        )}
-        {bankrupt ? (
-          <div className={styles.finalCoins}>
-            <svg className={styles.coinIcon} viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M12 8.3v7.4M9.9 15c.3.7 1.1 1.1 2.1 1.1 1.4 0 2.3-.7 2.3-1.7 0-1.1-1-1.4-2.3-1.7-1.3-.3-2.3-.7-2.3-1.7 0-1 .9-1.7 2.3-1.7 1 0 1.8.4 2.1 1.1"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div>
-              <p className={styles.winnerName}>{coins} moneditas</p>
-              <BodyText align="left">Balance final del restaurante</BodyText>
-            </div>
+
+      {/* izquierda: balance */}
+      <section className={styles.left}>
+        <div className={styles.leftStage}>
+          <div className={styles.ribbon}>
+            <img src="/scenary/tablero/liston.svg" alt="" draggable="false" />
+            <span>{bankrupt ? "Restaurante en quiebra" : chefLeft ? "Servicio cerrado" : "Restaurante triunfador"}</span>
           </div>
-        ) : (
-          winner && (
-            <div className={styles.winner}>
-              <CharacterAvatar id={winner.characterId} size="lg" />
-              <div>
-                <p className={styles.winnerName}>{winner.name}</p>
-                <BodyText align="left">Primero en llegar a FIN</BodyText>
+
+          <div className={styles.card}>
+            <img className={styles.frame} src={FINAL + "endframe.svg"} alt="" aria-hidden="true" draggable="false" />
+            <img
+              className={bankrupt ? styles.badCoins : styles.goodCoins}
+              src={FINAL + (bankrupt ? "badcoins.svg" : "goodcoins.svg")}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+            />
+            {chefResult && (
+              <div className={styles.chefRow}>
+                <ChefHat className={styles.chefHat} />
+                {chefLeft ? (
+                  <span className={styles.chefLeft}>El Chef se fue</span>
+                ) : (
+                  <>
+                    <span>Chef Maestro</span>
+                    <span className={styles.chefStars} aria-label={`${chefStars} de 5 estrellas`}>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <img
+                          key={i}
+                          className={i < chefStars ? styles.sOn : styles.sOff}
+                          style={{ animationDelay: `${0.5 + i * 0.18}s` }}
+                          src="/scenary/player register/star.svg"
+                          alt=""
+                          draggable="false"
+                        />
+                      ))}
+                    </span>
+                  </>
+                )}
               </div>
-            </div>
-          )
-        )}
-        <BodyText align="left" className={styles.note}>
-          {bankrupt
-            ? "Se acabaron las moneditas: demasiados pedidos se vencieron antes de entregarse. Así cerró el servicio cada quien:"
-            : "Todos cierran el servicio con una insignia, como en un partido: no solo gana quien llega primero."}
-        </BodyText>
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            wide
-            sound="press"
+            )}
+            <p className={styles.amount}>{coins} moneditas</p>
+            <p className={styles.balance}>Balance final del restaurante</p>
+            <p className={styles.note}>{message}</p>
+          </div>
+
+          <button
+            className={`${styles.btn} ${styles.again}`}
             onClick={() => {
+              sfx.press();
               dispatch({ type: "resetGame" });
               navigate("register");
             }}
           >
-            Jugar otra vez
-          </Button>
-          <Button wide onClick={() => dispatch({ type: "resetGame", intro: true })}>
-            Al menú
-          </Button>
+            <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
+            <span>Jugar otra vez</span>
+          </button>
+          <button
+            className={`${styles.btn} ${styles.menu}`}
+            onClick={() => {
+              sfx.tap();
+              dispatch({ type: "resetGame", intro: true });
+            }}
+          >
+            <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
+            <span>Ir al menu</span>
+          </button>
         </div>
-      </Pane>
+      </section>
 
-      <Pane divider>
-        <SectionLabel>Insignias de la mesa</SectionLabel>
-        <ul className={styles.badges}>
-          {list.map(({ name, badge }) => (
-            <li key={name} className={styles.badge}>
-              <CharacterAvatar id={badge?.icon || "queso"} size="sm" />
-              <span className={styles.badgeText}>
-                <span className={styles.badgeName}>{badge?.name}</span>
-                <span className={styles.badgeDesc}>{badge?.desc}</span>
-              </span>
-              <span className={styles.who}>{name}</span>
-            </li>
+      {/* derecha: pilar y panel de insignias */}
+      <aside className={styles.side}>
+        <div className={styles.sideStage}>
+          <div className={styles.pillar} />
+          <div className={styles.plaque}>
+            <i className={styles.pole} style={{ left: 70 }} />
+            <i className={styles.pole} style={{ left: 330 }} />
+            <span>Insignias</span>
+          </div>
+          <img className={styles.medal} src={FINAL + "badge.svg"} alt="" aria-hidden="true" draggable="false" />
+          {SPARKS.map(([x, y, w], i) => (
+            <img
+              key={i}
+              className={styles.spark}
+              src="/scenary/player register/starnoshadow.svg"
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+              style={{ left: x, top: y, width: w, animationDelay: `${i * 0.5}s` }}
+            />
           ))}
-        </ul>
-      </Pane>
-    </Screen>
+
+          {list.map(({ name, badge }, i) => {
+            const pi = Math.max(0, players.findIndex((p) => p.name === name));
+            const c = characterById(players[pi]?.characterId);
+            return (
+              <div
+                key={name}
+                className={styles.row}
+                style={{ top: 215 + (4 - list.length) * 104.5 + i * 209, animationDelay: `${0.25 + i * 0.15}s` }}
+              >
+                <img className={styles.pill} src={FINAL + BANNERS[pi % 4] + "banner.svg"} alt="" aria-hidden="true" draggable="false" />
+                <span className={styles.face}>
+                  <img
+                    className={c.face ? styles.faceZoom : styles.faceFit}
+                    src={c.src}
+                    alt={c.name}
+                    draggable="false"
+                    style={faceStyle(c)}
+                  />
+                </span>
+                <span className={styles.text}>
+                  <u style={{ color: PLAYER_COLORS[pi % 4] }}>{name}</u>
+                  <b>{badge?.name}</b>
+                  <em>{badge?.desc}</em>
+                </span>
+                <span className={styles.slot}>
+                  {badge?.img ? (
+                    <img src={badge.img} alt={`Insignia ${badge.name}: ${badge.desc}`} draggable="false" />
+                  ) : (
+                    <b title="Falta la imagen de esta insignia">?</b>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    </main>
   );
 }

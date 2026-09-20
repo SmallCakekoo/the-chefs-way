@@ -10,6 +10,7 @@
    (si se vence sin entregar, resta monedas: eso es lo que puede quebrar el
    restaurante). Mientras algun pedido esta en su ventana de prep, el reloj
    del PROXIMO pedido se pausa (ver timer en GameContext). */
+import { CLIENTS } from "./board.js";
 
 export const ORDER_INTERVALS = {
   fast: { label: "Rápido", ms: 15_000 },
@@ -46,20 +47,27 @@ export function humanInterval(key) {
 
 // Platos: base obligatoria + extras posibles + peso (mas peso = sale mas).
 // `pide`: como lo nombra el gato (diminutivo, tierno).
-const DISHES = [
-  { id: "taco", name: "Taco", pide: "un taquito", base: ["taco", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla"], weight: 4 },
-  { id: "hamburguesa", name: "Hamburguesa", pide: "una hamburguesita", base: ["pan", "carne"], extras: ["queso", "tomate", "lechuga", "cebolla", "huevo"], weight: 4 },
-  { id: "sandwich", name: "Sándwich", pide: "un sanduchito", base: ["pan"], extras: ["huevo", "queso", "tomate", "lechuga", "pollo"], weight: 3 },
-  { id: "ensalada", name: "Ensalada", pide: "una ensaladita", base: ["lechuga"], extras: ["tomate", "huevo", "queso", "aguacate", "pollo", "cebolla"], weight: 1 },
+// Platos (ingredientes desde public/Ingredients). base = pan o tortilla · protein = se elige una · extras = se sortean.
+// Taco (tortilla): pollo o carne + queso, lechuga, tomate, aguacate, huevo, cebolla.
+// Sándwich (pan de sándwich): pollo + queso, lechuga, tomate, aguacate, huevo.
+// Hamburguesa (pan de hamburguesa): carne + queso, lechuga, tomate, huevo, cebolla.
+export const DISHES = [
+  { id: "taco", name: "Taco", pide: "un taquito", base: ["tortilla"], protein: ["pollo", "carne"], extras: ["queso", "lechuga", "tomate", "aguacate", "huevo", "cebolla"], weight: 4 },
+  { id: "sandwich", name: "Sándwich", pide: "un sanduchito", base: ["pan-sandwich"], protein: ["pollo"], extras: ["queso", "lechuga", "tomate", "aguacate", "huevo"], weight: 3 },
+  { id: "hamburguesa", name: "Hamburguesa", pide: "una hamburguesita", base: ["pan-hamburguesa"], protein: ["carne"], extras: ["queso", "lechuga", "tomate", "huevo", "cebolla"], weight: 4 },
 ];
 
-const CATS = ["Michi", "Pelusa", "Manchas", "Nube", "Tomás", "Croqueta"];
+const CATS = ["Michi", "Pelusa", "Manchas", "Nube", "Bigotes", "Croqueta"];
 
-// Retratos del gato en public/cats/ (cat (1).jpg .. cat (32).jpg). Placeholders.
-const CAT_COUNT = 32;
-function catPortrait() {
-  const n = 1 + Math.floor(Math.random() * CAT_COUNT);
-  return `/cats/cat%20(${n}).jpg`;
+// El cliente se ve como uno de los animalitos de la selección (CLIENTS en board.js),
+// pero conserva su nombre de siempre.
+// `used` = nombres que ya están en la mesa: dos clientes a la vez no comparten nombre.
+function pickClient(used = new Set()) {
+  const free = CATS.filter((n) => !used.has(n));
+  const cat = pick(free.length ? free : CATS);
+  used.add(cat);
+  const c = pick(CLIENTS);
+  return { cat, catId: c.id, catImg: c.src };
 }
 
 // Frases del gato (máquina de escribir). Tiernas y educadas; nombran el plato.
@@ -69,7 +77,43 @@ const LINES = [
   (p) => `¿Me armas ${p}? Lo pido con:`,
   (p) => `Buenas, quisiera ${p} si son tan amables. Con:`,
   (p) => `Vengo con hambre… ${p}, por favor. Con:`,
+  (p) => `Hoy me porté bien, así que me merezco ${p}. Con:`,
+  (p) => `Psst… ¿me preparan ${p}? Que sea con:`,
+  (p) => `Llevo todo el día pensando en ${p}. Lo quiero con:`,
+  (p) => `Buen día, chefs. Hoy quiero ${p}, con:`,
+  (p) => `Mi barriguita pide ${p}. Y que lleve:`,
+  (p) => `Vine corriendo por ${p}. ¿Se puede con:`,
+  (p) => `Un antojito: ${p}, por favor. Con:`,
+  (p) => `Me dijeron que aquí hacen el mejor. Quiero ${p}, con:`,
+  (p) => `Hoy no cocino yo. ¡Tráiganme ${p}! Con:`,
+  (p) => `Si no es mucha molestia, ${p}. Que lleve:`,
+  (p) => `¡Qué rico huele! Quiero ${p} con:`,
+  (p) => `Mi mamá dice que coma bien. ${p}, por favor, con:`,
+  (p) => `Estoy de cumpleaños… ¡quiero ${p}! Con:`,
+  (p) => `Hoy es viernes y los viernes son de ${p}. Con:`,
+  (p) => `Vengo de muy lejos por ${p}. Que lleve:`,
+  (p) => `Soy cliente fiel y hoy pido ${p}. Con:`,
+  (p) => `Shhh… es un secreto, pero quiero ${p}. Con:`,
+  (p) => `Mi tía dice que aquí cocinan con amor. ${p}, con:`,
+  (p) => `Después de tanto caminar, me caería bien ${p}. Con:`,
+  (p) => `¿Cómo estás? Yo con hambre. Quiero ${p}, con:`,,
+  (p) => `Ya lo pensé bien: ${p}. Que lleve:`,
+  (p) => `Tengo una cita y quiero ir contento. ${p}, con:`,
+  (p) => `Un día sin ${p} es un día perdido. Con:`,
 ];
+
+// Bolsa barajada: no se repite ninguna frase hasta haber salido todas.
+let lineBag = [];
+function nextLine() {
+  if (!lineBag.length) {
+    lineBag = LINES.map((_, i) => i);
+    for (let i = lineBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lineBag[i], lineBag[j]] = [lineBag[j], lineBag[i]];
+    }
+  }
+  return LINES[lineBag.pop()];
+}
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -92,10 +136,10 @@ function sample(arr, n) {
 }
 
 /** Construye UN pedido ya con sus asignados (`assignees`) decididos. */
-function buildOrder(seq, now, assignees) {
+function buildOrder(seq, now, assignees, used) {
   const dish = pickWeighted(DISHES);
   const nExtras = 1 + Math.floor(Math.random() * 3); // 1..3
-  const items = [...dish.base, ...sample(dish.extras, nExtras)];
+  const items = [...dish.base, pick(dish.protein), ...sample(dish.extras, nExtras)];
   const check = {};
   items.forEach((_, i) => (check[i] = null));
 
@@ -103,9 +147,8 @@ function buildOrder(seq, now, assignees) {
     id: `p${seq}`,
     num: seq,
     dish: dish.name,
-    line: pick(LINES)(dish.pide),
-    cat: pick(CATS),
-    catImg: catPortrait(),
+    line: nextLine()(dish.pide),
+    ...pickClient(used),
     assignees,
     items,
     check,
@@ -122,47 +165,25 @@ const SPAWN_MODES = ["solo", "paralelo", "pareja"];
 /** Genera el siguiente lote de pedidos (1 o 2, segun la forma sorteada).
  *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa.
  *  Devuelve { orders, seq } con el nuevo contador. */
-export function spawnBatch(seq, players) {
+export function spawnBatch(seq, players, taken = []) {
   const now = Date.now();
+  const used = new Set(taken);
   const mode = players.length >= 2 ? pick(SPAWN_MODES) : "solo";
   let n = seq;
 
   if (mode === "paralelo") {
     const [a, b] = sample(players, 2);
-    const o1 = buildOrder(++n, now, [a]);
-    const o2 = buildOrder(++n, now, [b]);
+    const o1 = buildOrder(++n, now, [a], used);
+    const o2 = buildOrder(++n, now, [b], used);
     return { orders: [o1, o2], seq: n, mode };
   }
   if (mode === "pareja") {
     const pair = sample(players, Math.min(2, players.length));
-    const o = buildOrder(++n, now, pair);
+    const o = buildOrder(++n, now, pair, used);
     return { orders: [o], seq: n, mode };
   }
   // solo
   const [a] = sample(players, 1);
-  const o = buildOrder(++n, now, a ? [a] : []);
+  const o = buildOrder(++n, now, a ? [a] : [], used);
   return { orders: [o], seq: n, mode };
-}
-
-/* El super pedido grupal del final: lo cocina TODA la mesa al llegar a FIN. */
-export function makeFinaleOrder() {
-  const items = ["pan", "carne", "queso", "tomate", "lechuga", "huevo"];
-  const check = {};
-  items.forEach((_, i) => (check[i] = null));
-  const now = Date.now();
-  return {
-    id: "finale",
-    num: "★",
-    dish: "Súper combo de la casa",
-    line: "Para cerrar el servicio: el súper combo de la casa. Con:",
-    cat: pick(CATS),
-    catImg: catPortrait(),
-    assignees: [],
-    items,
-    check,
-    status: "pending",
-    createdAt: now,
-    prepUntil: now, // sin prep: la mesa ya está lista
-    finale: true,
-  };
 }

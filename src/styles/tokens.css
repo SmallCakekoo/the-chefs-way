@@ -11,6 +11,8 @@
   color-scheme: light;
 
   /* Tipografia */
+  /* saturación de las ilustraciones de logros e insignias (1 = original; súbelo o bájalo aquí) */
+  --art-saturate: 1.65;
   --font-display: "Tuneo Much", "Satoshi Variable", system-ui, sans-serif;
   --font-body: "Satoshi Variable", system-ui, sans-serif;
 

@@ -2,17 +2,17 @@ import { useGame } from "../game/GameContext.jsx";
 import Screen from "../components/Screen.jsx";
 import SectionLabel from "../components/SectionLabel.jsx";
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
-import { CHARACTERS, CASILLA_INFO, EVENTS, GRAPH } from "../game/board.js";
+import { CHARACTERS, INGREDIENTS, CASILLA_INFO, EVENTS, GRAPH } from "../game/board.js";
 import { BRANCHES } from "../game/forks.js";
 import { ACHIEVEMENTS } from "../game/achievements.js";
 import { BADGES } from "../game/badges.js";
 import styles from "./DevRefScreen.module.css";
 
 const CASILLAS = [
-  ["Naranja · 35%", CASILLA_INFO.O.label, CASILLA_INFO.O.text],
-  ["Aguamarina · 25%", CASILLA_INFO.A.label, CASILLA_INFO.A.text],
-  ["Amarillo · 25%", CASILLA_INFO.Y.label, CASILLA_INFO.Y.text],
-  ["Negro · 15%", CASILLA_INFO.B.label, CASILLA_INFO.B.text],
+  ["O", CASILLA_INFO.O.label, CASILLA_INFO.O.text],
+  ["A", CASILLA_INFO.A.label, CASILLA_INFO.A.text],
+  ["Y", CASILLA_INFO.Y.label, CASILLA_INFO.Y.text],
+  ["B", CASILLA_INFO.B.label, CASILLA_INFO.B.text],
 ];
 
 export default function DevRefScreen() {
@@ -42,6 +42,15 @@ export default function DevRefScreen() {
       </section>
 
       <section className={styles.block}>
+        <SectionLabel tone="ink">Ingredientes ({INGREDIENTS.length})</SectionLabel>
+        {INGREDIENTS.map((i) => (
+          <div key={i.id} className={styles.row}>
+            <b>{i.id}</b> — {i.name}
+          </div>
+        ))}
+      </section>
+
+      <section className={styles.block}>
         <SectionLabel tone="ink">Bifurcaciones ({BRANCHES.length})</SectionLabel>
         {BRANCHES.map((b) => (
           <div key={b.from} className={styles.row}>
@@ -54,7 +63,7 @@ export default function DevRefScreen() {
         <SectionLabel tone="ink">Mapa ({Object.keys(GRAPH).length} nodos)</SectionLabel>
         {Object.entries(GRAPH).map(([id, n]) => (
           <div key={id} className={styles.row}>
-            <b>{id}</b> [{n.c || "—"}] → {n.next.join(", ") || "FIN"}
+            <b>{id}</b> [{n.c || "—"}] → {n.next.join(", ") || "meta"}
           </div>
         ))}
       </section>

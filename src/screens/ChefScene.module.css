@@ -1,0 +1,273 @@
+/* Pedido del Chef Maestro. Reutiliza el escenario de OrderScene (mostrador, riel, mesa, asientos).
+   Lo propio del Chef usa los tokens de src/styles/tokens.css (--coral, --yellow, --ink, --paper, --r-*, --font-*). */
+
+/* ---------- el Chef ---------- */
+.chef { position: absolute; inset: 0; }
+.chefImg {
+  position: absolute;
+  bottom: 380px;
+  height: 480px;
+  width: auto;
+  max-width: none;
+  left: calc(690px - var(--fx, 0.5) * 480px / var(--far, 1.2));
+}
+.hat {
+  position: absolute;
+  left: 590px;
+  top: 118px;
+  width: 200px;
+  height: auto;
+  filter: drop-shadow(0 6px 0 rgb(36 27 22 / 0.18));
+}
+.chefEnter .chefImg { animation: chefRise 1.2s cubic-bezier(0.34, 1.35, 0.64, 1) 0.6s both; }
+.chefEnter .hat { animation: hatDrop 0.7s cubic-bezier(0.34, 1.6, 0.64, 1) 1.7s both; }
+@keyframes chefRise { from { translate: 0 420px; } }
+@keyframes hatDrop { from { translate: 0 -260px; rotate: -25deg; opacity: 0; } }
+
+.nameplate {
+  position: absolute;
+  left: 490px;
+  top: 548px;
+  width: 400px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 1;
+  color: var(--on-primary);
+  -webkit-text-stroke: 6px var(--ink);
+  paint-order: stroke fill;
+}
+
+/* ---------- globo del Chef ---------- */
+.bubble {
+  position: absolute;
+  left: 215px;
+  top: 40px;
+  width: 560px;
+  padding: 22px 30px 26px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  border: 5px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+  font-family: var(--font-body);
+  color: var(--ink);
+  animation: pop 0.45s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+  transform-origin: 90% 100%;
+}
+@keyframes pop { from { scale: 0.7; opacity: 0; } }
+.bubble small {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-deep);
+}
+.bubble b { font-weight: 900; font-size: 44px; line-height: 1.05; }
+.bubble span { font-weight: 600; font-size: 26px; color: var(--ink-2); }
+.bubble em { font-style: normal; font-weight: 800; font-size: 24px; color: var(--primary); }
+.bubble u { text-decoration: none; color: var(--ink); }
+.skip {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 10px 26px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: 800 24px var(--font-body);
+  cursor: pointer;
+}
+.recipe { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+.bubble .rchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 20px 6px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 28px var(--font-body);
+  animation: pop 0.35s cubic-bezier(0.34, 1.6, 0.64, 1) both;
+}
+
+/* ---------- comanda (ticket del Chef) ---------- */
+.comanda .ctitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 900 34px/1.1 var(--font-body);
+  color: var(--ink);
+}
+.ctitleHat { width: 52px; height: auto; flex: none; }
+.cmeta { margin: 0; font: 700 22px var(--font-body); color: var(--ink-2); }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+}
+.food {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 3px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 800 20px var(--font-body);
+  line-height: 1.1;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+.food:hover:not(:disabled) { transform: translateY(-2px); }
+.food:disabled { cursor: default; }
+.foodOn { border-color: var(--primary); background: var(--primary-tint); }
+.foodRight { border-color: var(--secondary); background: var(--secondary-tint); }
+.foodWrong { border-color: var(--primary); background: var(--primary-tint); text-decoration: line-through; }
+.foodDim { opacity: 0.45; }
+.patience {
+  flex: none;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+.patience i { display: block; height: 100%; border-radius: 7px; transition: width 0.25s linear; }
+.deliver {
+  flex: none;
+  margin-top: auto;
+  height: 60px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: 900 26px var(--font-body);
+  cursor: pointer;
+}
+.deliver:hover { filter: brightness(0.95); }
+.locked { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.locked p { margin: 0; text-align: center; font: 800 26px var(--font-body); color: var(--ink-2); }
+.qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.qgrid span {
+  display: grid;
+  place-items: center;
+  height: 52px;
+  border-radius: var(--r-md);
+  border: 3px dashed var(--hairline);
+  font: 900 30px var(--font-body);
+  color: var(--hairline);
+}
+
+/* ---------- entrada y tensión ---------- */
+.dim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgb(36 27 22 / 0.55), rgb(20 12 8 / 0.92));
+  pointer-events: none;
+  animation: dimIn 0.4s ease-out both;
+}
+@keyframes dimIn { from { opacity: 0; } }
+.tense::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 220px 40px rgb(245 69 28 / 0.55);
+  animation: heartbeat 0.65s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%, 100% { opacity: 0.2; }
+  20% { opacity: 1; }
+  40% { opacity: 0.35; }
+}
+.arrive, .thinking {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--paper);
+  font-family: var(--font-body);
+}
+.arrive { animation: arrive 2.6s ease-out both; zoom: var(--s); }
+.thinking { zoom: var(--s); }
+@keyframes arrive {
+  0% { opacity: 0; scale: 0.6; }
+  20% { opacity: 1; scale: 1.05; }
+  85% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.1; }
+}
+.arriveHat { width: 220px; height: auto; animation: hatSpin 2.6s ease-out both; }
+@keyframes hatSpin { from { rotate: -30deg; translate: 0 -120px; } 40% { rotate: 8deg; translate: 0 0; } to { rotate: 0deg; } }
+.arrive b { font: 400 110px/1 var(--font-display); color: var(--yellow); -webkit-text-stroke: 8px var(--ink); paint-order: stroke fill; }
+.arrive span { font: 800 40px var(--font-body); letter-spacing: 0.04em; }
+.thinking span { font: 400 90px/1 var(--font-display); color: var(--coral); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
+.thinking b { font: 800 48px var(--font-body); }
+.thinking i { display: flex; gap: 22px; font-style: normal; }
+.thinking u { width: 22px; height: 22px; border-radius: 50%; background: var(--yellow); animation: dot 1s ease-in-out infinite; }
+.thinking u:nth-child(2) { animation-delay: 0.2s; }
+.thinking u:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot { 0%, 100% { translate: 0 0; opacity: 0.4; } 50% { translate: 0 -18px; opacity: 1; } }
+
+/* ---------- veredicto ---------- */
+.verdict {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgb(36 27 22 / 0.5), rgb(20 12 8 / 0.9));
+  animation: dimIn 0.4s ease-out both;
+}
+.verdictBox {
+  width: 900px;
+  padding: 40px 50px 44px;
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  border: 6px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  animation: pop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  zoom: var(--s);
+}
+.verdictBox small { font: 800 26px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.stars { display: flex; gap: 14px; margin: 6px 0; }
+.stars img { width: 132px; height: auto; }
+.starOn { animation: starPop 0.55s cubic-bezier(0.34, 1.8, 0.64, 1) both; filter: drop-shadow(0 8px 0 rgb(36 27 22 / 0.18)); }
+.starOff { filter: grayscale(1) brightness(0.7) opacity(0.35); animation: starPop 0.4s ease-out both; }
+@keyframes starPop { from { scale: 0; rotate: -200deg; opacity: 0; } }
+.verdictTitle { font: 900 64px/1 var(--font-body); }
+.verdictLine { margin: 0; font: 700 30px var(--font-body); color: var(--ink-2); }
+.gain { margin: 0; font: 900 40px var(--font-body); color: var(--forest); }
+.loss { margin: 0; font: 900 40px var(--font-body); color: var(--coral-deep); }
+.verdictNote { margin: 0; max-width: 700px; text-align: center; font: 600 28px/1.35 var(--font-body); color: var(--ink-2); }
+.next {
+  margin-top: 14px;
+  padding: 16px 64px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: 900 36px var(--font-body);
+  cursor: pointer;
+}
+.next:hover { filter: brightness(0.95); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chefImg, .hat, .arrive, .arriveHat, .tense::after, .thinking u, .starOn, .starOff, .bubble, .rchip { animation: none !important; }
+}
