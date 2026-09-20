@@ -63,25 +63,25 @@
 .back:focus-visible, .tab:focus-visible, .slot:focus-visible { outline: 4px solid #ffc836; outline-offset: 4px; border-radius: 24px; }
 
 /* ---------- libro ---------- */
-.base { position: absolute; left: 154px; top: 188px; width: 1598px; height: 874px; animation: bookIn 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) both; }
-.pages { position: absolute; left: 202px; top: 213px; width: 1493px; height: 804px; animation: bookIn 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) 0.05s both; }
+.base { z-index: 1; position: absolute; left: 154px; top: 188px; width: 1598px; height: 874px; animation: bookIn 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) both; }
+.pages { z-index: 1; position: absolute; left: 202px; top: 213px; width: 1493px; height: 804px; animation: bookIn 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) 0.05s both; }
 @keyframes bookIn { from { opacity: 0; translate: 0 40px; } }
 
 /* pestañas del borde derecho: la activa sobresale un poco */
 .tab {
   position: absolute;
-  z-index: 2;
+  z-index: 0; /* detrás de la tapa del libro: asoman por el borde como pestañas prendidas */
   width: 164px;
   height: 161px;
   transition: translate 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .tab img { width: 100%; height: 100%; pointer-events: none; }
-.tabProfile { left: 1673px; top: 326px; }
-.tabBadges { left: 1673px; top: 510px; }
-.tabExit { left: 1679px; top: 694px; }
-.tab:hover { translate: 6px 0; }
-.tabOn { translate: 12px 0; }
-.tabOn:hover { translate: 12px 0; }
+.tabProfile { left: 1701px; top: 326px; }
+.tabBadges { left: 1701px; top: 510px; }
+.tabExit { left: 1707px; top: 694px; }
+.tab:hover { translate: 5px 0; }
+.tabOn { translate: 10px 0; }
+.tabOn:hover { translate: 10px 0; }
 
 /* rótulo de página (Personajes / Logros) */
 .label {
@@ -110,6 +110,7 @@
 /* ---------- personajes ---------- */
 .leftPage {
   position: absolute;
+  z-index: 2;
   inset: 0;
   pointer-events: none;
   animation: pageIn 0.3s ease-out both;
@@ -175,6 +176,7 @@ button.slot:active .face { transform: translateY(2px) scale(0.97); }
 /* ---------- página derecha ---------- */
 .right {
   position: absolute;
+  z-index: 2;
   inset: 0;
   pointer-events: none;
   animation: pageIn 0.3s ease-out both;
@@ -313,7 +315,7 @@ button.slot:active .face { transform: translateY(2px) scale(0.97); }
   transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
 }
 /* ilustración del logro: a color si está desbloqueado; apagada (mismo archivo, gris y con menos opacidad) si no */
-.pic { display: block; width: 100%; height: 100%; object-fit: contain; filter: saturate(var(--art-saturate)); }
+.pic { display: block; width: 100%; height: 100%; object-fit: contain; filter: var(--art-filter); }
 /* bloqueado: gris y apagado; este filtro reemplaza al de saturación a propósito (nada de color) */
 .off .pic { filter: grayscale(1); opacity: 0.4; }
 .medalBtn:hover { transform: translateY(-4px); }

@@ -5,7 +5,6 @@ import { CHEF, CHEF_FOODS, chefDictSec, chefPatienceSec, scoreChef, chefCoinsFor
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
 import PlayerRing from "../components/PlayerRing.jsx";
 import ChefHat from "../components/ChefHat.jsx";
-import VacationIcon from "../components/VacationIcon.jsx";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
 import base from "./OrderScene.module.css";
@@ -278,10 +277,7 @@ export default function ChefScene() {
                 <PlayerRing index={i} characterId={p.characterId} />
                 <span className={base.seatName}>{p.name}</span>
                 {helpers.includes(p.name) && (
-                  <span className={base.helperTag}>
-                    <VacationIcon className={base.helperHat} />
-                    De vacaciones
-                  </span>
+                  <span className={base.helperTag}>De vacaciones</span>
                 )}
               </div>
             </div>
@@ -315,7 +311,18 @@ export default function ChefScene() {
       {phase === "verdict" && verdict && (
         <div className={styles.verdict}>
           <div className={styles.verdictBox}>
-            <small>Veredicto del Chef</small>
+            <img className={styles.verdictFrame} src="/scenary/common/rectangleframe.svg" alt="" aria-hidden="true" draggable="false" />
+            <h2 className={styles.verdictHead}>Veredicto del Chef</h2>
+            <div className={styles.verdictLeft}>
+            <b className={styles.verdictTitle}>
+              {verdict.stars === 5
+                ? "¡Perfecto!"
+                : verdict.stars >= 3
+                  ? "Buen plato"
+                  : verdict.stars >= 1
+                    ? "Pasable"
+                    : "Inaceptable"}
+            </b>
             <div className={styles.stars} aria-label={`${verdict.stars} de 5 estrellas`}>
               {[0, 1, 2, 3, 4].map((i) => (
                 <img
@@ -328,15 +335,8 @@ export default function ChefScene() {
                 />
               ))}
             </div>
-            <b className={styles.verdictTitle}>
-              {verdict.stars === 5
-                ? "¡Perfecto!"
-                : verdict.stars >= 3
-                  ? "Buen plato"
-                  : verdict.stars >= 1
-                    ? "Pasable"
-                    : "Inaceptable"}
-            </b>
+            </div>
+            <div className={styles.verdictRight}>
             <p className={styles.verdictLine}>
               {verdict.correct} de {chef.recipe.length} ingredientes correctos
               {verdict.wrong ? ` · ${verdict.wrong} de más` : ""}
@@ -353,17 +353,19 @@ export default function ChefScene() {
                   : "El Chef se retira, pero volverá cuando llegue otro jugador a la meta. Su receta cambiará."}
               </p>
             )}
-            <button
-              type="button"
-              className={styles.next}
-              onClick={() => {
-                sfx.press();
-                dispatch({ type: "chefVerdict", stars: verdict.stars });
-              }}
-            >
-              Continuar
-            </button>
+            </div>
           </div>
+          <button
+            type="button"
+            className={styles.next}
+            onClick={() => {
+              sfx.press();
+              dispatch({ type: "chefVerdict", stars: verdict.stars });
+            }}
+          >
+            <img src="/scenary/common/btn.svg" alt="" aria-hidden="true" draggable="false" />
+            <span>Continuar</span>
+          </button>
         </div>
       )}
     </div>

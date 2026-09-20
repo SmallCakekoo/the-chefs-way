@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "capturas": "node scripts/capturar-pantallas.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.63.0",
     "vite": "^8.3.0"
   }
 }

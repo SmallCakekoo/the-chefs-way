@@ -18,7 +18,7 @@ const CASILLAS = [
 export default function DevRefScreen() {
   const { navigate } = useGame();
   return (
-    <Screen onBack={() => navigate("rules")} layout="flow">
+    <Screen onBack={() => navigate("menu")} layout="flow">
       <div className={styles.warn}>
         Referencia solo para desarrollo. Se borrará antes de publicar.
       </div>
