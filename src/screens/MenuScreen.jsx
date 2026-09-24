@@ -8,11 +8,15 @@ import styles from "./MenuScreen.module.css";
 const BTN_X = 95;
 const BTN_Y = 260;
 const BTN_STEP = 165;
+// con partida guardada entra un cuarto botón: la columna sube y se aprieta un poco para no pisar los objetos de abajo
+const BTN_Y4 = 165;
+const BTN_STEP4 = 150;
 const ENTRIES = [
   { key: "play", label: "Jugar" },
   { key: "profile", label: "Perfil" },
   { key: "settings", label: "Config" },
 ];
+const RESUME = { key: "resume", label: "Continuar" };
 
 // Objetos: [clase, archivo, x, y, ancho, alto, transformación]. Se pintan en este orden, sobre la olla.
 const PROPS = [
@@ -36,7 +40,10 @@ function useStageScale() {
 }
 
 export default function MenuScreen() {
-  const { navigate, dispatch, menuIntro } = useGame();
+  const { navigate, dispatch, menuIntro, savedGame } = useGame();
+  const entries = savedGame ? [RESUME, ...ENTRIES] : ENTRIES;
+  const y0 = savedGame ? BTN_Y4 : BTN_Y;
+  const dy = savedGame ? BTN_STEP4 : BTN_STEP;
   const [intro] = useState(menuIntro);
   const scale = useStageScale();
   const [active, setActive] = useState(null);
@@ -53,7 +60,9 @@ export default function MenuScreen() {
 
   const go = (key) => {
     sfx.tap();
-    if (key === "play") {
+    if (key === "resume") {
+      dispatch({ type: "resumeSavedGame" });
+    } else if (key === "play") {
       dispatch({ type: "resetGame" });
       navigate("register");
     } else {
@@ -131,11 +140,12 @@ export default function MenuScreen() {
           aria-label="Menú principal"
           onPointerLeave={() => setActive(null)}
         >
-          {ENTRIES.map((e, i) => (
+          {entries.map((e, i) => (
             <button
               key={e.key}
               className={styles.btn}
-              style={{ "--i": i, left: BTN_X, top: BTN_Y + i * BTN_STEP }}
+              style={{ "--i": i, left: BTN_X, top: y0 + i * dy }}
+              aria-label={e.key === "resume" ? "Continuar la partida guardada" : undefined}
               onClick={() => go(e.key)}
               onPointerEnter={() => setActive(i)}
               onFocus={() => setActive(i)}

@@ -6,8 +6,18 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { FINAL_NODE, START_NODE, MIN_PLAYERS, CHARACTERS } from "./board.js";
-import { EMPTY_STATS } from "./achievements.js";
+import {
+  FINAL_NODE,
+  START_NODE,
+  MIN_PLAYERS,
+  CHEFS,
+  POWER_CARD_INFO,
+  DEMAND_STEPS,
+  EXTRA_MEMORY_MS,
+  retreatGraph,
+  stepForward,
+} from "./board.js";
+import { normalizeStats } from "./achievements.js";
 import {
   intervalMs,
   spawnBatch,
@@ -26,7 +36,7 @@ const GameContext = createContext(null);
 const LS_KEY = "slammed.v2";
 
 const DEFAULTS = {
-  profile: { name: "Chef invitado", characterId: "queso", description: "" },
+  profile: { name: "Chef invitado", characterId: "chef-oso", description: "" },
   settings: {
     sound: true,
     music: true,
@@ -34,7 +44,7 @@ const DEFAULTS = {
     haptics: true,
     orderInterval: DEFAULT_INTERVAL,
   },
-  stats: { ...EMPTY_STATS },
+  stats: normalizeStats(),
 };
 
 function loadPersisted() {
@@ -47,7 +57,7 @@ function loadPersisted() {
       profile: { ...DEFAULTS.profile, ...(p.profile || {}) },
       // `theme` era del modo oscuro (ya no existe): se descarta si venía guardado
       settings: (({ theme, ...rest }) => ({ ...DEFAULTS.settings, ...rest }))(p.settings || {}),
-      stats: { ...DEFAULTS.stats, ...(p.stats || {}) },
+      stats: normalizeStats(p.stats),
     };
   } catch {
     return DEFAULTS;
@@ -68,6 +78,59 @@ function persist(state) {
   } catch {
     /* almacenamiento no disponible: seguimos en memoria */
   }
+}
+
+/* Partida en curso: se guarda aparte (GAME_KEY) mientras se juega, para poder seguirla después de recargar o
+   cerrar la app. Al volver, los relojes se corren lo que duró la ausencia (nadie pierde pedidos por irse). */
+const GAME_KEY = "chefsway.partida";
+const GAME_FIELDS = [
+  "players", "order", "posOf", "finishedOf", "finishOrder", "turnIdx", "turnNo", "statsAwarded",
+  "orders", "orderSeq", "nextOrderAt", "perPlayer", "coins", "chef", "chefResult", "chefStartedAt",
+  "trailOf", "skipOf", "happyUntil", "collab", "movedTurn", "pausedAt", "route",
+];
+function loadSavedGame() {
+  if (typeof window === "undefined") return null;
+  try {
+    const g = JSON.parse(localStorage.getItem(GAME_KEY) || "null");
+    return g && Array.isArray(g.order) && g.order.length ? g : null;
+  } catch {
+    return null;
+  }
+}
+function saveGame(state) {
+  try {
+    const g = Object.fromEntries(GAME_FIELDS.map((k) => [k, state[k]]));
+    localStorage.setItem(GAME_KEY, JSON.stringify({ ...g, savedAt: Date.now() }));
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+function clearSavedGame() {
+  try {
+    localStorage.removeItem(GAME_KEY);
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+
+/** Corre todos los relojes de la partida `ms` hacia adelante (pausa, o tiempo fuera de la app). */
+function shiftClocks(state, ms) {
+  if (!ms) return state;
+  return {
+    ...state,
+    orders: state.orders.map((o) =>
+      o.status === "pending"
+        ? {
+            ...o,
+            prepUntil: o.prepUntil ? o.prepUntil + ms : o.prepUntil,
+            dueAt: o.dueAt ? o.dueAt + ms : o.dueAt,
+            bonusAt: o.bonusAt ? o.bonusAt + ms : o.bonusAt,
+          }
+        : o
+    ),
+    nextOrderAt: state.nextOrderAt ? state.nextOrderAt + ms : state.nextOrderAt,
+    chefStartedAt: state.chefStartedAt ? state.chefStartedAt + ms : state.chefStartedAt,
+  };
 }
 
 function makeInitial() {
@@ -94,62 +157,113 @@ function makeInitial() {
     chef: null, // pedido del Chef Maestro: { attempt, title, recipe, changed, failures }
     chefResult: null, // { stars, attempt, left } cuando el Chef ya terminó (estrellas o "se fue")
     chefStartedAt: 0,
+    trailOf: {}, // casillas por las que pasó cada jugador (para retroceder por el mismo camino)
+    skipOf: {}, // turnos que cada jugador debe saltarse (demanda)
+    happyUntil: -1, // Hora feliz: activa mientras turnNo < happyUntil
+    collab: null, // Colaboración del día: { until, doers: [], done }
+    toasts: [], // avisos cortos: { id, text, kind }
+    movedTurn: -1, // último turno en el que el jugador en turno ya movió su ficha
+    pausedAt: null, // relojes en pausa (p. ej. mientras se elige a quién demandar)
+    savedGame: !!loadSavedGame(), // hay una partida guardada para "Continuar"
     ...p,
   };
 }
 
-function finishGame(state) {
-  const badges = awardBadges(
-    state.order,
-    state.posOf,
-    state.finishOrder,
-    state.perPlayer
-  );
+/** Suma `n` al contador `key` de cada jugador de `names` (estadísticas de la partida, para las insignias). */
+function bump(state, names, key, n = 1) {
+  if (!names?.length) return state;
+  const perPlayer = { ...state.perPlayer };
+  names.forEach((name) => {
+    const pp = perPlayer[name] || {};
+    perPlayer[name] = { ...pp, [key]: (pp[key] || 0) + n };
+  });
+  return { ...state, perPlayer };
+}
+
+let toastSeq = 0;
+/** Agrega un aviso corto (lo pinta <Toasts/> y se borra solo). */
+function toast(state, text, kind = "info") {
+  return { ...state, toasts: [...state.toasts, { id: ++toastSeq, text, kind }].slice(-4) };
+}
+const happyOn = (state) => state.turnNo < state.happyUntil;
+// jugadores que siguen en el tablero (los que llegaron a la meta son ayudantes)
+const playingNames = (state) => state.order.filter((n) => !state.finishedOf[n]);
+
+/** Hace retroceder a `name` `steps` casillas por el camino que recorrió. */
+function retreat(state, name, steps) {
+  const from = state.posOf[name] ?? START_NODE;
+  const to = retreatGraph(from, steps, state.trailOf[name]);
+  return { ...state, posOf: { ...state.posOf, [name]: to } };
+}
+
+/** Quita una carta de la mano de un jugador (por índice o por id de carta). */
+function dropCard(state, name, { index, card }) {
+  return {
+    ...state,
+    players: state.players.map((p) => {
+      if (p.name !== name) return p;
+      const hand = [...(p.powerCards || [])];
+      const i = index ?? hand.indexOf(card);
+      if (i >= 0) hand.splice(i, 1);
+      return { ...p, powerCards: hand };
+    }),
+  };
+}
+
+/** Demanda: el demandado retrocede y pierde su próximo turno. */
+function sue(state, name) {
+  const next = retreat(state, name, DEMAND_STEPS);
+  return { ...next, skipOf: { ...next.skipOf, [name]: (next.skipOf[name] || 0) + 1 } };
+}
+
+/** Quién es "yo" en la mesa: el jugador con el mismo nombre que el perfil; si nadie se llama así,
+ *  el primero que se registró (normalmente quien tiene el dispositivo). */
+export function meIn(state) {
+  const mine = state.profile.name.trim().toLowerCase();
+  return state.order.find((n) => n.trim().toLowerCase() === mine) || state.order[0] || null;
+}
+
+/** Cierra la partida: reparte insignias y suma a las estadísticas guardadas del perfil (una sola vez por partida). */
+function recordGame(state, { bankrupt }) {
+  const badges = awardBadges(state.order, state.posOf, state.finishOrder, state.perPlayer);
   let stats = state.stats;
   if (!state.statsAwarded) {
-    const iWon =
-      state.finishOrder[0] &&
-      state.finishOrder[0].toLowerCase() ===
-        state.profile.name.trim().toLowerCase();
+    const me = meIn(state);
+    const pp = state.perPlayer[me] || {};
+    const myBadge = badges.find((b) => b.name === me)?.badge;
+    stats = normalizeStats(stats);
     stats = {
       ...stats,
       gamesPlayed: stats.gamesPlayed + 1,
-      wins: stats.wins + (iWon ? 1 : 0),
+      wins: stats.wins + (!bankrupt && me && state.finishOrder[0] === me ? 1 : 0),
+      ordersDelivered: stats.ordersDelivered + (pp.orders || 0),
+      eventsHit: stats.eventsHit + (pp.events || 0),
+      shortcuts: stats.shortcuts + (pp.shortcuts || 0),
+      sixes: stats.sixes + (pp.sixes || 0),
+      cardsUsed: stats.cardsUsed + (pp.cards || 0),
+      bankruptcies: stats.bankruptcies + (bankrupt ? 1 : 0),
+      bestCoins: stats.bestCoins == null ? state.coins : Math.max(stats.bestCoins, state.coins),
+      bestChefStars: Math.max(stats.bestChefStars, state.chefResult?.stars || 0),
+      badges: myBadge ? { ...stats.badges, [myBadge.id]: (stats.badges[myBadge.id] || 0) + 1 } : stats.badges,
+      lastBadge: myBadge ? { id: myBadge.id, player: me } : null,
     };
   }
+  clearSavedGame();
   return {
     ...state,
+    savedGame: false,
     stats,
     badges,
     statsAwarded: true,
     nextOrderAt: null,
+    bankrupt,
     route: "results",
   };
 }
 
-// Las monedas llegaron a 0: se acaba la partida por quiebra, no por llegar
-// a FIN. Reusa la pantalla de resultados con `bankrupt: true`.
-function bankruptGame(state) {
-  const badges = awardBadges(
-    state.order,
-    state.posOf,
-    state.finishOrder,
-    state.perPlayer
-  );
-  let stats = state.stats;
-  if (!state.statsAwarded) {
-    stats = { ...stats, gamesPlayed: stats.gamesPlayed + 1 };
-  }
-  return {
-    ...state,
-    stats,
-    badges,
-    statsAwarded: true,
-    nextOrderAt: null,
-    bankrupt: true,
-    route: "results",
-  };
-}
+const finishGame = (state) => recordGame(state, { bankrupt: false });
+// Las monedas llegaron a 0: se acaba la partida por quiebra, no por llegar a la meta.
+const bankruptGame = (state) => recordGame(state, { bankrupt: true });
 
 // pasa al siguiente jugador que sigue jugando (los ayudantes se saltan)
 function advanceTurn(state) {
@@ -157,10 +271,21 @@ function advanceTurn(state) {
     return finishGame(state);
   }
   let turnIdx = state.turnIdx;
-  do {
+  let skipOf = state.skipOf;
+  let next = state;
+  // un jugador demandado se salta su turno (una vez por demanda); si todos deben saltar, alguien juega igual
+  for (let guard = 0; guard < state.order.length * 3; guard++) {
     turnIdx = (turnIdx + 1) % state.order.length;
-  } while (state.finishedOf[state.order[turnIdx]]);
-  return { ...state, turnIdx, turnNo: state.turnNo + 1 };
+    const name = state.order[turnIdx];
+    if (state.finishedOf[name]) continue;
+    if (skipOf[name] > 0 && guard < state.order.length * 2) {
+      skipOf = { ...skipOf, [name]: skipOf[name] - 1 };
+      next = toast(next, `${name} pierde este turno por la demanda.`, "bad");
+      continue;
+    }
+    break;
+  }
+  return { ...next, skipOf, turnIdx, turnNo: state.turnNo + 1 };
 }
 
 function reducer(state, action) {
@@ -188,7 +313,7 @@ function reducer(state, action) {
       order.forEach((n) => {
         posOf[n] = START_NODE;
         finishedOf[n] = false;
-        perPlayer[n] = { orders: 0, events: 0, shortcuts: 0, sixes: 0, rolls: 0 };
+        perPlayer[n] = { orders: 0, assigned: 0, expired: 0, events: 0, shortcuts: 0, sixes: 0, rolls: 0, cards: 0 };
       });
       return {
         ...state,
@@ -208,8 +333,15 @@ function reducer(state, action) {
         chef: null,
         chefResult: null,
         chefStartedAt: 0,
+        skipOf: {},
+        happyUntil: -1,
+        collab: null,
+        toasts: [],
+        movedTurn: -1,
+        pausedAt: null,
+        trailOf: Object.fromEntries(order.map((n) => [n, [START_NODE]])),
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
-        stats: { ...state.stats, gamesHosted: state.stats.gamesHosted + 1 },
+        stats: { ...normalizeStats(state.stats), gamesHosted: (state.stats.gamesHosted || 0) + 1 },
         route: "turn",
       };
     }
@@ -250,8 +382,9 @@ function reducer(state, action) {
     }
 
     case "applyMove": {
-      const { name, square } = action;
+      const { name, square, path = [square] } = action;
       const posOf = { ...state.posOf, [name]: square };
+      const trailOf = { ...state.trailOf, [name]: [...(state.trailOf[name] || [START_NODE]), ...path] };
       let finishedOf = state.finishedOf;
       let finishOrder = state.finishOrder;
       let extra = {};
@@ -273,7 +406,7 @@ function reducer(state, action) {
           extra = { chef, route: "finale", chefStartedAt: Date.now() };
         }
       }
-      return { ...state, posOf, finishedOf, finishOrder, ...extra };
+      return { ...state, posOf, trailOf, finishedOf, finishOrder, movedTurn: state.turnNo, ...extra };
     }
 
     case "nextTurn":
@@ -340,21 +473,111 @@ function reducer(state, action) {
         ),
       };
 
-    // el jugador usa una carta (la arrastra al centro): sale de su mano. El efecto lo define el equipo.
-    case "usePowerCard":
-      return {
-        ...state,
-        players: state.players.map((p) =>
-          p.name === action.name
-            ? { ...p, powerCards: (p.powerCards || []).filter((_, i) => i !== action.index) }
-            : p
-        ),
-      };
+    // efecto de un evento de casilla (ver EVENTS / NEGATIVE_EVENTS en board.js)
+    case "applyEvent": {
+      const { name, fx = {} } = action;
+      let next = state;
+      if (fx.back) next = retreat(next, name, fx.back);
+      if (fx.coins) next = { ...next, coins: next.coins + fx.coins };
+      if (fx.coinsPerPlayer) next = { ...next, coins: next.coins + fx.coinsPerPlayer * next.order.length };
+      // "una ronda" = hasta que vuelva a tocarle a cada jugador que sigue en el tablero
+      const round = next.turnNo + Math.max(1, playingNames(next).length);
+      if (fx.happyHour) next = { ...next, happyUntil: round };
+      if (fx.collab) next = { ...next, collab: { until: round, doers: [], done: false } };
+      return next.coins <= 0 ? bankruptGame(next) : next;
+    }
+
+    // el jugador usa una carta (la arrastra al centro): sale de su mano y hace su efecto
+    case "usePowerCard": {
+      const { name, index, card, orderId, target } = action;
+      let next = bump(dropCard(state, name, { index }), [name], "cards");
+      const info = POWER_CARD_INFO[card] || {};
+      if (card === "15 segundos en memory") {
+        const now = Date.now();
+        next = {
+          ...next,
+          orders: next.orders.map((o) => {
+            if (o.id !== orderId || o.status !== "pending") return o;
+            // si el memory sigue armándose, el tiempo extra va ahí; el pedido se vence 15 s después
+            const inPrep = o.prepUntil && now < o.prepUntil;
+            return {
+              ...o,
+              prepUntil: inPrep ? o.prepUntil + EXTRA_MEMORY_MS : o.prepUntil,
+              dueAt: o.dueAt ? o.dueAt + EXTRA_MEMORY_MS : o.dueAt,
+              bonusAt: now,
+            };
+          }),
+        };
+        return toast(next, `${name} sumó 15 segundos al pedido.`, "good");
+      }
+      if (card === "dolb turno memoria") {
+        next = {
+          ...next,
+          orders: next.orders.map((o) =>
+            o.id === orderId ? { ...o, doubleTurn: [...(o.doubleTurn || []), name] } : o
+          ),
+        };
+        return toast(next, `${name} juega dos turnos seguidos en el memory.`, "good");
+      }
+      if (card === "demandar jugador" && target) {
+        // el demandado puede devolver la demanda con su carta: le rebota a quien demandó
+        if (action.bounce) {
+          next = bump(dropCard(next, target, { card: "devolver demanda" }), [target], "cards");
+          next = sue(next, name);
+          return toast(next, `${target} devolvió la demanda: ${name} retrocede ${DEMAND_STEPS} casillas y pierde su próximo turno.`, "bad");
+        }
+        next = sue(next, target);
+        return toast(next, `${name} demandó a ${target}: retrocede ${DEMAND_STEPS} casillas y pierde su próximo turno.`, "bad");
+      }
+      if (card === "robar dee ingrediente a otro jugador" && target) {
+        return toast(next, `${name} le roba una carta de ingrediente a ${target}. ¡Tómala de su lado del memory!`, "good");
+      }
+      return toast(next, `${name} usó ${info.name || "una carta"}.`, "good");
+    }
+
+    case "toast":
+      return toast(state, action.text, action.kind);
+
+    case "dismissToast":
+      return { ...state, toasts: state.toasts.filter((t) => t.id !== action.id) };
 
     case "menuIntroDone":
       return state.menuIntro ? { ...state, menuIntro: false } : state;
 
+    // la mesa terminó de armar el memory antes de tiempo: empieza ya el paso 2 (jugar).
+    // El vencimiento no se mueve: lo que sobró del armado queda como tiempo extra para jugar.
+    case "memoryReady": {
+      const now = Date.now();
+      return {
+        ...state,
+        orders: state.orders.map((o) =>
+          o.id === action.id && o.status === "pending" && o.prepUntil > now ? { ...o, prepUntil: now } : o
+        ),
+      };
+    }
+
+    // pausa y reanuda los relojes de los pedidos (el tiempo en pausa no cuenta)
+    case "pauseClocks":
+      return state.pausedAt ? state : { ...state, pausedAt: Date.now() };
+    case "resumeClocks": {
+      if (!state.pausedAt) return state;
+      return { ...shiftClocks(state, Date.now() - state.pausedAt), pausedAt: null };
+    }
+
+    // seguir la partida guardada: los relojes esperaron mientras la app estuvo cerrada
+    case "resumeSavedGame": {
+      const g = loadSavedGame();
+      if (!g) return { ...state, savedGame: false };
+      const away = Date.now() - (g.pausedAt || g.savedAt || Date.now());
+      let next = shiftClocks({ ...state, ...g, pausedAt: null, toasts: [], badges: null, bankrupt: false }, Math.max(0, away));
+      next = { ...next, route: g.route === "finale" && next.chef && !next.chefResult ? "finale" : "turn" };
+      // si el jugador en turno ya había movido su ficha, sigue el siguiente
+      if (next.route === "turn" && next.movedTurn === next.turnNo) next = advanceTurn(next);
+      return toast(next, "Partida recuperada. ¡A seguir cocinando!", "good");
+    }
+
     case "resetGame":
+      clearSavedGame();
       return {
         ...state,
         menuIntro: action.intro ?? state.menuIntro,
@@ -376,6 +599,14 @@ function reducer(state, action) {
         chef: null,
         chefResult: null,
         chefStartedAt: 0,
+        trailOf: {},
+        skipOf: {},
+        happyUntil: -1,
+        collab: null,
+        toasts: [],
+        movedTurn: -1,
+        pausedAt: null,
+        savedGame: false,
         route: "menu",
       };
 
@@ -388,8 +619,9 @@ function reducer(state, action) {
         playing.length ? playing : state.order,
         state.orders.filter((o) => o.status === "pending").map((o) => o.cat)
       );
+      const next = batch.orders.reduce((st, o) => bump(st, o.assignees, "assigned"), state);
       return {
-        ...state,
+        ...next,
         orders: [...state.orders, ...batch.orders],
         orderSeq: batch.seq,
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
@@ -414,7 +646,7 @@ function reducer(state, action) {
       // sin clamp: el ultimo pedido que las hace quebrar puede dejarlas en
       // negativo (p.ej. 10 monedas - 18 = -8), se muestra tal cual en el cierre.
       const coins = state.coins - COIN_PENALTY;
-      const next = { ...state, orders, coins };
+      const next = bump({ ...state, orders, coins }, target.assignees, "expired");
       return coins <= 0 ? bankruptGame(next) : next;
     }
 
@@ -458,9 +690,32 @@ function reducer(state, action) {
       if (target?.finale) {
         return finishGame({ ...state, orders, perPlayer });
       }
-      // entregado: el restaurante gana o pierde moneditas según cómo quedó
-      const coins = state.coins + Math.round(COIN_REWARD * score);
-      const next = { ...state, orders, perPlayer, coins };
+      // entregado: el restaurante gana o pierde moneditas según cómo quedó (Hora feliz: lo ganado vale doble)
+      const mult = score > 0 && happyOn(state) ? 2 : 1;
+      const coins = state.coins + Math.round(COIN_REWARD * score) * mult;
+      let next = { ...state, orders, perPlayer, coins };
+      // Colaboración del día: cuando 2+ jugadores distintos entregan pedidos en la ronda, todos avanzan 1 casilla
+      const c = state.collab;
+      if (c && !c.done && state.turnNo < c.until && score > 0 && target?.assignees?.length) {
+        const doers = [...new Set([...c.doers, ...target.assignees])];
+        next = { ...next, collab: { ...c, doers } };
+        if (doers.length >= 2) {
+          const posOf = { ...next.posOf };
+          const trailOf = { ...next.trailOf };
+          playingNames(next).forEach((n) => {
+            const to = stepForward(posOf[n] ?? START_NODE);
+            if (to !== posOf[n]) {
+              posOf[n] = to;
+              trailOf[n] = [...(trailOf[n] || []), to];
+            }
+          });
+          next = toast(
+            { ...next, posOf, trailOf, collab: { ...next.collab, done: true } },
+            "¡Colaboración del día! Todos avanzan 1 casilla.",
+            "good"
+          );
+        }
+      }
       return coins <= 0 ? bankruptGame(next) : next;
     }
 
@@ -492,6 +747,11 @@ export function GameProvider({ children }) {
   useEffect(() => {
     persist(state);
   }, [state.profile, state.settings, state.stats]);
+
+  // partida en curso: se guarda en cada cambio mientras se juega (turno o Chef Maestro)
+  useEffect(() => {
+    if ((state.route === "turn" || state.route === "finale") && state.order.length) saveGame(state);
+  }, [state]);
 
   // sonido y vibracion
   useEffect(() => {
@@ -554,6 +814,7 @@ export function GameProvider({ children }) {
       const now = Date.now();
       const delta = now - last;
       last = now;
+      if (s.pausedAt) return; // relojes en pausa: nada se vence ni llega
 
       s.orders.forEach((o) => {
         if (o.status === "pending" && !o.finale && o.dueAt && now >= o.dueAt) {
@@ -587,8 +848,12 @@ export function GameProvider({ children }) {
       currentName,
       currentPlayer: state.players.find((p) => p.name === currentName) || null,
       navigate: (route) => dispatch({ type: "navigate", route }),
-      characters: CHARACTERS,
+      characters: CHEFS,
       pendingOrders: state.orders.filter((o) => o.status === "pending"),
+      happyHour: happyOn(state),
+      collabOn: !!state.collab && !state.collab.done && state.turnNo < state.collab.until,
+      // hora de los relojes: congelada mientras están en pausa
+      clockNow: () => state.pausedAt || Date.now(),
     };
   }, [state]);
 

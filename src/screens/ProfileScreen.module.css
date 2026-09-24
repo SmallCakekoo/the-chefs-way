@@ -317,7 +317,8 @@ button.slot:active .face { transform: translateY(2px) scale(0.97); }
 /* ilustración del logro: a color si está desbloqueado; apagada (mismo archivo, gris y con menos opacidad) si no */
 .pic { display: block; width: 100%; height: 100%; object-fit: contain; filter: var(--art-filter); }
 /* bloqueado: gris y apagado; este filtro reemplaza al de saturación a propósito (nada de color) */
-.off .pic { filter: grayscale(1); opacity: 0.4; }
+/* bloqueado: se ve el arte "Por Descubrir" tal cual */
+.off .pic { filter: none; opacity: 0.9; }
 .medalBtn:hover { transform: translateY(-4px); }
 .medalBtn:active { transform: translateY(2px) scale(0.97); }
 .medalBtn:focus-visible { outline: 4px solid #ffc836; outline-offset: 6px; border-radius: 28px; }
@@ -385,6 +386,21 @@ button.slot:active .face { transform: translateY(2px) scale(0.97); }
   text-transform: uppercase;
   color: #1d8f6c;
 }
+
+/* progreso del logro elegido (p. ej. "Progreso: 3 de 5") */
+.aProgress {
+  position: absolute;
+  left: 1074px;
+  top: 812px;
+  width: 491px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 22px;
+  color: #9c7869;
+}
+.aDone { color: #1d8f6c; }
 
 @media (prefers-reduced-motion: reduce) {
   .root * { animation: none !important; transition: none !important; }

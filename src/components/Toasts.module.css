@@ -1,0 +1,43 @@
+/* Avisos de la partida: arriba al centro, encima del tablero y de la escena de pedidos. */
+.root {
+  position: absolute;
+  left: 50%;
+  top: calc(200px * var(--s));
+  translate: -50% 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10px * var(--s));
+  width: calc(900px * var(--s));
+  pointer-events: none;
+}
+.toast {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(14px * var(--s));
+  padding: calc(12px * var(--s)) calc(26px * var(--s)) calc(12px * var(--s)) calc(14px * var(--s));
+  border-radius: calc(26px * var(--s));
+  background: #fff2ec;
+  border: calc(4px * var(--s)) solid #b0716a;
+  box-shadow: 0 calc(6px * var(--s)) 0 #8f5a54, 0 calc(14px * var(--s)) calc(30px * var(--s)) rgb(60 30 20 / 0.3);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: calc(26px * var(--s));
+  line-height: 1.25;
+  color: #6b3f36;
+  animation: toastIn 0.45s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+}
+.toast img {
+  flex: none;
+  width: calc(64px * var(--s));
+  height: calc(64px * var(--s));
+  object-fit: contain;
+}
+.good { border-color: #32b88a; box-shadow: 0 calc(6px * var(--s)) 0 #1f8a66, 0 calc(14px * var(--s)) calc(30px * var(--s)) rgb(60 30 20 / 0.3); }
+.bad { border-color: #e2381a; box-shadow: 0 calc(6px * var(--s)) 0 #a82410, 0 calc(14px * var(--s)) calc(30px * var(--s)) rgb(60 30 20 / 0.3); }
+@keyframes toastIn { from { opacity: 0; translate: 0 calc(-30px * var(--s)); scale: 0.9; } }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

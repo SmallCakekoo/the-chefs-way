@@ -1,6 +1,7 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useLayoutEffect, useRef, useState } from "react";
 import { GameProvider, useGame } from "./game/GameContext.jsx";
 import AppFrame from "./components/AppFrame.jsx";
+import ScreenWipe from "./components/ScreenWipe.jsx";
 
 import LoginScreen from "./screens/LoginScreen.jsx";
 import MenuScreen from "./screens/MenuScreen.jsx";
@@ -8,7 +9,6 @@ const RegisterScreen = lazy(() => import("./screens/RegisterScreen.jsx"));
 const TurnScreen = lazy(() => import("./screens/TurnScreen.jsx"));
 const FinaleScreen = lazy(() => import("./screens/FinaleScreen.jsx"));
 const ResultsScreen = lazy(() => import("./screens/ResultsScreen.jsx"));
-const DevRefScreen = lazy(() => import("./screens/DevRefScreen.jsx"));
 const ProfileScreen = lazy(() => import("./screens/ProfileScreen.jsx"));
 const SettingsScreen = lazy(() => import("./screens/SettingsScreen.jsx"));
 
@@ -19,13 +19,25 @@ const SCREENS = {
   turn: TurnScreen,
   finale: FinaleScreen,
   results: ResultsScreen,
-  devref: DevRefScreen,
   profile: ProfileScreen,
   settings: SettingsScreen,
 };
 
+/** Cortina de transición: aparece en cada cambio de pantalla (no al abrir la app ni entre turnos). */
+function useWipe(route) {
+  const prev = useRef(route);
+  const [n, setN] = useState(0);
+  useLayoutEffect(() => {
+    if (prev.current === route) return;
+    prev.current = route;
+    setN((x) => x + 1);
+  }, [route]);
+  return n;
+}
+
 function Router() {
   const { route, turnNo } = useGame();
+  const wipe = useWipe(route);
   const Active = SCREENS[route] || LoginScreen;
   // La pantalla de turno se remonta cada turno (turnNo) para resetear su
   // estado local aunque le toque al mismo jugador.
@@ -33,9 +45,12 @@ function Router() {
   // El menú es un montaje a pantalla completa, sin el marco de tablet.
   if (["menu", "login", "turn", "finale", "results", "profile", "settings"].includes(route)) {
     return (
-      <Suspense fallback={null}>
-        <Active key={key} />
-      </Suspense>
+      <>
+        <Suspense fallback={null}>
+          <Active key={key} />
+        </Suspense>
+        {wipe > 0 && <ScreenWipe key={wipe} />}
+      </>
     );
   }
   return (
@@ -43,6 +58,7 @@ function Router() {
       <Suspense fallback={null}>
         <Active key={key} />
       </Suspense>
+      {wipe > 0 && <ScreenWipe key={wipe} />}
     </AppFrame>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext.jsx";
-import { MAX_PLAYERS, MIN_PLAYERS, CLIENTS, characterById, faceStyle } from "../game/board.js";
+import { MAX_PLAYERS, MIN_PLAYERS, CHEFS, characterById, faceStyle } from "../game/board.js";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
 import styles from "./RegisterScreen.module.css";
@@ -13,12 +13,12 @@ const ROW_X = 105;
 const ROW_Y = 420;
 const ROW_STEP = 140;
 
-/** Siguiente cliente libre (no elegido) en la dirección dada. */
+/** Siguiente chef libre (no elegido) en la dirección dada. */
 function nextFree(taken, from, dir) {
-  const n = CLIENTS.length;
+  const n = CHEFS.length;
   for (let k = 1; k <= n; k++) {
-    const c = CLIENTS[(((from + dir * k) % n) + n) % n];
-    if (!taken.includes(c.id)) return CLIENTS.indexOf(c);
+    const c = CHEFS[(((from + dir * k) % n) + n) % n];
+    if (!taken.includes(c.id)) return CHEFS.indexOf(c);
   }
   return from;
 }
@@ -29,10 +29,10 @@ export default function RegisterScreen() {
   const taken = players.map((p) => p.characterId);
   const [name, setName] = useState("");
   const [idx, setIdx] = useState(() =>
-    Math.max(0, CLIENTS.findIndex((c) => !taken.includes(c.id)))
+    Math.max(0, CHEFS.findIndex((c) => !taken.includes(c.id)))
   );
 
-  const client = CLIENTS[idx];
+  const client = CHEFS[idx];
   const full = players.length >= MAX_PLAYERS;
   const canStart = players.length >= MIN_PLAYERS;
   const missing = Math.max(0, MIN_PLAYERS - players.length);
@@ -55,7 +55,7 @@ export default function RegisterScreen() {
 
   return (
     <main className={styles.root} style={{ "--s": scale }}>
-      {/* izquierda: cocina a pantalla completa + selector de cliente */}
+      {/* izquierda: cocina a pantalla completa + selector de chef */}
       <section className={styles.scene}>
         <img
           className={styles.kitchen}
@@ -72,14 +72,14 @@ export default function RegisterScreen() {
         <div className={styles.sceneStage}>
           <button
             className={`${styles.arrow} ${styles.arrowL}`}
-            aria-label="Cliente anterior"
+            aria-label="Chef anterior"
             onClick={() => step(-1)}
           >
             <img src={BASE + "arrow.svg"} alt="" draggable="false" />
           </button>
           <button
             className={`${styles.arrow} ${styles.arrowR}`}
-            aria-label="Cliente siguiente"
+            aria-label="Chef siguiente"
             onClick={() => step(1)}
           >
             <img src={BASE + "arrow.svg"} alt="" draggable="false" />

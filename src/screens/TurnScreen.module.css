@@ -3,7 +3,7 @@
 .root {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  overflow: clip; /* sin scroll: ni el foco ni un arrastre pueden correr la pantalla */
   background: #fff2ec;
 }
 /* marco rosa: recto por fuera (llega a las esquinas de la ventana), redondeado por dentro */
@@ -149,16 +149,13 @@
 .iconBtn:active { transform: translateY(2px) scale(0.96); }
 .iconBtn img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .backBtn { left: 700px; }
+/* settingbtn.svg trae su sombra: se agranda un poco para que el botón mida lo mismo que el de volver */
 .gearBtn {
-  left: 1129px;
-  border-radius: 24px;
-  background: #b0716a !important;
-  box-shadow: 0 6px 0 #8f5a54, inset 0 0 0 4px #a06058;
-  color: #ffd9c6;
-  display: grid;
-  place-items: center;
+  left: 1127px;
+  top: 57px;
+  width: 95px;
+  height: 98px;
 }
-.gearBtn svg { width: 58px; height: 58px; }
 
 .coins {
   position: absolute;
@@ -169,6 +166,33 @@
   pointer-events: none;
 }
 .coins img { display: block; width: 100%; height: 100%; }
+/* eventos que duran una ronda (Hora feliz, Colaboración del día): fila arriba, sobre los botones
+   (un poco separada del borde para que el marco rosado de la pantalla no la corte) */
+.buffs {
+  position: absolute;
+  left: 560px;
+  width: 800px;
+  top: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.buff {
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #fff2ec;
+  border: 3px solid #32b88a;
+  box-shadow: 0 4px 0 #1f8a66;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 20px;
+  color: #1f6f53;
+  white-space: nowrap;
+  animation: buffPulse 1.6s ease-in-out infinite;
+}
+@keyframes buffPulse { 50% { scale: 1.06; } }
+
 .coinNum {
   position: absolute;
   left: 79px;
@@ -313,7 +337,8 @@
 .cardLayer { position: absolute; inset: 0; z-index: 3; }
 .frameArt { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; user-select: none; pointer-events: none; }
 
-/* resultado: el dado (a la izquierda) + el cuadro. Con carta ganada todo se corre para que quepa la carta a la derecha */
+/* resultado: el dado (a la izquierda) + el cuadro. Con carta ganada todo se corre para que quepa la carta a la derecha.
+   El marco (rectangleframe.svg) no se estira: el texto tiene que caber dentro de su borde interior. */
 .rect {
   position: absolute;
   left: 740px;
@@ -325,12 +350,13 @@
 .rectCard { left: 667px; width: 560px; height: 213px; top: 608px; }
 .rectIn {
   position: absolute;
-  inset: 26px 52px 26px 56px;
+  inset: 30px 52px 30px 56px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
 }
+.rectCard .rectIn { inset: 28px 44px 28px 48px; gap: 3px; }
 @keyframes cardPop { from { scale: 0.85; opacity: 0; } }
 .eyebrow {
   font-family: var(--font-body);
@@ -356,8 +382,9 @@
   line-height: 1.3;
   color: #6b3f36;
 }
-.rectCard .title { font-size: 38px; }
-.rectCard .text { font-size: 22px; }
+.rectCard .title { font-size: 36px; }
+.rectCard .text { font-size: 22px; line-height: 1.25; }
+.rectCard .eyebrow { font-size: 19px; line-height: 1.1; }
 .bonus {
   margin: 2px 0 0;
   font-family: var(--font-body);
@@ -523,6 +550,26 @@
   rotate: 8deg;
   pointer-events: none;
   animation: wonIn 0.8s cubic-bezier(0.34, 1.6, 0.64, 1) 0.15s both, wonFloat 2.6s ease-in-out 1s infinite;
+}
+/* "¡Carta extra!" encima de la carta ganada en un evento positivo */
+.wonTag {
+  position: absolute;
+  left: 1238px;
+  top: 548px;
+  width: 240px;
+  z-index: 5;
+  padding: 6px 0;
+  border-radius: 999px;
+  background: #32b88a;
+  box-shadow: 0 5px 0 #1f8a66;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 24px;
+  color: #fff;
+  rotate: 4deg;
+  pointer-events: none;
+  animation: popIn 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.6s both;
 }
 @keyframes wonIn {
   from { scale: 0.2; translate: -160px 160px; rotate: -40deg; opacity: 0; }

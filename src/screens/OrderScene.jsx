@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "../game/GameContext.jsx";
 import { characterById, ingredientById, faceStyle, POWER_CARD_INFO } from "../game/board.js";
 import PlayerRing from "../components/PlayerRing.jsx";
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
-import useTypewriter from "../lib/useTypewriter.js";
+import SpeechBubble from "../components/SpeechBubble.jsx";
 import { COIN_REWARD } from "../game/orders.js";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
@@ -18,100 +18,6 @@ const FAN_R = 760; // radio del abanico
 const FAN_MAX_STEP = 13; // grados máximos entre cartas
 const CARD_W = 202;
 const CARD_H = 319;
-
-/* Globos de diálogo (order/dialogues/esquina-*.svg): de menor a mayor. `w`/`h` = tamaño del archivo; se muestran a
-   escala K. La cola queda abajo a la derecha, apuntando al cliente. Cada pedido usa el más chico donde le quepa el texto. */
-const DLG = "/scenary/order/dialogues/";
-const DLG_K = 0.24;
-const DLG_INSET = { l: 34, r: 48, t: 20, b: 34 }; // margen del texto dentro del globo (px de lienzo)
-const DLG_RIGHT = 800; // borde derecho del globo en el lienzo de la izquierda
-const DLG_BASE = 376; // línea de la que "cuelga" el globo (su base): así la cola siempre apunta al cliente
-const DIALOGUES = [
-  { id: "mini", w: 1534, h: 276 },
-  { id: "xs", w: 2276, h: 276 },
-  { id: "s", w: 2014, h: 520 },
-  { id: "m", w: 2304, h: 521 },
-  { id: "l", w: 2304, h: 727 },
-  { id: "xl", w: 2304, h: 895 },
-].map((d) => ({ ...d, W: Math.round(d.w * DLG_K), H: Math.round(d.h * DLG_K) }));
-
-/** El globo del cliente: fondo ilustrado, texto que se "escribe" y los ingredientes debajo. */
-function Dialogue({ order, line }) {
-  const { shown, done } = useTypewriter(line);
-  const measure = useRef(null);
-  const [fit, setFit] = useState({ d: DIALOGUES[DIALOGUES.length - 1], scale: 1, textH: 0 });
-  const items = order.items;
-
-  // elige el globo más chico donde cabe el texto completo + los ingredientes
-  useLayoutEffect(() => {
-    const el = measure.current;
-    if (!el) return;
-    const textEl = el.firstChild;
-    const pick = () => {
-      const at = (d) => {
-        el.style.width = `${d.W - DLG_INSET.l - DLG_INSET.r}px`;
-        return { need: el.scrollHeight, have: d.H - DLG_INSET.t - DLG_INSET.b, textH: textEl.offsetHeight };
-      };
-      for (const d of DIALOGUES) {
-        const m = at(d);
-        if (m.need <= m.have) return setFit({ d, scale: 1, textH: m.textH });
-      }
-      // ni el más grande alcanza: se achica un poco la letra
-      const d = DIALOGUES[DIALOGUES.length - 1];
-      const m = at(d);
-      setFit({ d, scale: Math.max(0.72, m.have / m.need), textH: m.textH });
-    };
-    pick();
-    document.fonts?.ready.then(pick);
-  }, [order.id, line]);
-
-  const { d, scale, textH } = fit;
-  const body = (
-    <>
-      <p className={styles.bubbleText} style={textH ? { minHeight: textH } : undefined}>
-        {line}
-      </p>
-      <div className={styles.chips}>
-        {items.map((id, i) => (
-          <span key={i} className={styles.chip}>
-            <CharacterAvatar id={id} size="sm" ingredient />
-            {ingredientById(id).name}
-          </span>
-        ))}
-      </div>
-    </>
-  );
-
-  return (
-    <div
-      className={styles.bubble}
-      style={{ left: DLG_RIGHT - d.W, top: DLG_BASE, width: d.W, height: d.H, "--fit": scale }}
-    >
-      <img className={styles.bubbleArt} src={`${DLG}esquina-${d.id}.svg`} alt="" aria-hidden="true" draggable="false" />
-      <div
-        className={styles.bubbleIn}
-        style={{ inset: `${DLG_INSET.t}px ${DLG_INSET.r}px ${DLG_INSET.b}px ${DLG_INSET.l}px` }}
-      >
-        <p className={styles.bubbleText} style={textH ? { minHeight: textH } : undefined}>
-          {shown}
-          {!done && <span className={styles.caret} aria-hidden="true" />}
-        </p>
-        <div className={styles.chips} style={{ "--typed-ms": `${line.length * 32 + 120}ms` }}>
-          {items.map((id, i) => (
-            <span key={i} className={`${styles.chip} ${styles.chipIn}`} style={{ "--i": i }}>
-              <CharacterAvatar id={id} size="sm" ingredient />
-              {ingredientById(id).name}
-            </span>
-          ))}
-        </div>
-      </div>
-      {/* copia invisible con el texto completo, solo para medir qué globo hace falta */}
-      <div ref={measure} className={styles.bubbleMeasure} aria-hidden="true">
-        {body}
-      </div>
-    </div>
-  );
-}
 
 function mmss(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -146,10 +52,19 @@ function Box({ state, onClick }) {
 
 /** Un pedido colgado del riel: quién lo hace, checklist y "Terminado". */
 function Ticket({ order: o, selected, onSelect, style }) {
-  const { players, dispatch } = useGame();
-  const now = useNow(true);
+  const { players, happyHour, pausedAt, dispatch } = useGame();
+  const tick = useNow(!pausedAt);
+  const now = pausedAt || tick; // en pausa, el reloj del ticket se queda quieto
+  // la carta +15 s acaba de usarse en este pedido: el reloj lo muestra un momento
+  const bonusFlash = o.bonusAt && now - o.bonusAt < 2500;
+  // al terminar de armar (paso 1 → paso 2) suena un aviso: ¡a jugar el memory!
+  const wasPrep = useRef((o.prepUntil || 0) > Date.now());
   const prepLeft = (o.prepUntil || 0) - now;
   const inPrep = prepLeft > 0;
+  useEffect(() => {
+    if (wasPrep.current && !inPrep) sfx.order();
+    wasPrep.current = inPrep;
+  }, [inPrep]);
   const dueLeft = o.dueAt ? o.dueAt - now : null;
   const urgent = dueLeft != null && dueLeft < 15_000;
   const marked = o.items.filter((_, i) => o.check?.[i] != null).length;
@@ -157,7 +72,8 @@ function Ticket({ order: o, selected, onSelect, style }) {
   // recompensa según las marcas: ✓ suma, ✕ resta
   const yes = o.items.filter((_, i) => o.check?.[i] === "yes").length;
   const no = o.items.filter((_, i) => o.check?.[i] === "no").length;
-  const delta = Math.round((COIN_REWARD * (yes - no)) / o.items.length);
+  const base = Math.round((COIN_REWARD * (yes - no)) / o.items.length);
+  const delta = base > 0 && happyHour ? base * 2 : base; // Hora feliz: lo ganado vale doble
   // paciencia del cliente: lo que queda del tiempo para entregar
   const window = o.dueAt && o.prepUntil ? o.dueAt - o.prepUntil : 0;
   const patience = window ? Math.max(0, Math.min(1, dueLeft / window)) : null;
@@ -196,10 +112,27 @@ function Ticket({ order: o, selected, onSelect, style }) {
           )}
         </div>
 
+        {o.doubleTurn?.length > 0 && (
+          <p className={styles.perk}>Doble turno en el memory: {o.doubleTurn.join(", ")}</p>
+        )}
         {inPrep ? (
-          <div className={styles.prep}>
-            <span>Armen el memory en la mesa</span>
+          // primero se arma el memory (el reloj del próximo pedido espera); después, el checklist
+          <div className={`${styles.prep} ${bonusFlash ? styles.bonus : ""}`}>
+            <span>¡Armen y jueguen el memory ahora!</span>
             <b>{mmss(prepLeft)}</b>
+            <em className={styles.stepNext}>Después lo juegan y marcan los ingredientes que consiguieron.</em>
+            <button
+              type="button"
+              className={styles.ready}
+              onClick={(e) => {
+                e.stopPropagation();
+                sfx.press();
+                dispatch({ type: "memoryReady", id: o.id });
+              }}
+            >
+              Ya lo armamos
+            </button>
+            {bonusFlash && <i className={styles.plus}>+15 s</i>}
           </div>
         ) : (
           <>
@@ -221,8 +154,9 @@ function Ticket({ order: o, selected, onSelect, style }) {
             </ul>
             {dueLeft != null && (
               <div className={styles.patienceBox}>
-                <p className={`${styles.due} ${urgent ? styles.dueUrgent : ""}`}>
+                <p className={`${styles.due} ${urgent ? styles.dueUrgent : ""} ${bonusFlash ? styles.bonus : ""}`}>
                   vence en {mmss(Math.max(0, dueLeft))}
+                  {bonusFlash && <i className={styles.plus}>+15 s</i>}
                 </p>
                 {patience != null && (
                   <div className={styles.patience} role="progressbar" aria-label="Paciencia del cliente" aria-valuenow={Math.round(patience * 100)}>
@@ -258,7 +192,7 @@ function Ticket({ order: o, selected, onSelect, style }) {
 /** Pantalla del pedido (order/finalidea.svg): el cliente pide en el mostrador, los pedidos cuelgan del riel
  *  a la derecha y abajo va la mano de cartas de poder. */
 export default function OrderScene({ orders }) {
-  const { players, coins, finishedOf, dispatch } = useGame();
+  const { players, coins, finishedOf, happyHour, pausedAt, dispatch } = useGame();
   const scale = useStageScale();
   const [sel, setSel] = useState(0);
   const [pickedKey, setPickedKey] = useState(null);
@@ -281,9 +215,41 @@ export default function OrderScene({ orders }) {
   const [drag, setDrag] = useState(null); // { key, dx, dy, over, armed }
   const dragRef = useRef(null);
   const [epic, setEpic] = useState(null); // animación al usar una carta
+  const [picking, setPicking] = useState(null); // carta que pide elegir a otro jugador: { h }
+  const [bounceAsk, setBounceAsk] = useState(null); // el demandado tiene "Devolver demanda": { h, target }
+  const [spread, setSpread] = useState(false); // ver todos los pedidos lado a lado (en vez de apilados)
+  // mientras se elige a quién demandar/robar, los relojes de los pedidos se pausan; al cerrar el cuadro siguen
+  const asking = !!(picking || bounceAsk);
+  useEffect(() => {
+    if (!asking) return;
+    dispatch({ type: "pauseClocks" });
+    return () => dispatch({ type: "resumeClocks" });
+  }, [asking, dispatch]);
   const latest = useRef({});
-  latest.current = { scale, players, dispatch, hand };
+  latest.current = { scale, players, dispatch, hand, cur, orders };
   const handKeys = hand.map((h) => h.key).join(",");
+
+  /** Juega la carta: sale de la mano y hace su efecto (ver usePowerCard en GameContext). */
+  const playCard = (h, target, bounce = false) => {
+    const { players: ps, dispatch: dp, cur: c, orders: os } = latest.current;
+    const name = ps[h.owner].name;
+    // las cartas del memory van al pedido del dueño (o al que se está viendo)
+    const mine = os.find((o) => o.assignees?.includes(name)) || c;
+    sfx.win();
+    dp({ type: "usePowerCard", name, index: h.ci, card: h.card, orderId: mine?.id, target, bounce });
+    setEpic({ id: Date.now(), card: h.card, who: name, color: RING_COLORS[h.owner % 4] });
+  };
+  const chooseTarget = (target) => {
+    const h = picking.h;
+    setPicking(null);
+    const victim = players.find((p) => p.name === target);
+    if (h.card === "demandar jugador" && (victim?.powerCards || []).includes("devolver demanda")) {
+      sfx.select();
+      setBounceAsk({ h, target });
+      return;
+    }
+    playCard(h, target);
+  };
 
   // Arrastre con listeners en window: así termina siempre (aunque la carta desaparezca a mitad de camino)
   useEffect(() => {
@@ -322,9 +288,17 @@ export default function OrderScene({ orders }) {
         sfx.select();
         setPickedKey((cur) => (cur === h.key ? null : h.key));
       } else if (over) {
-        sfx.win();
-        dp({ type: "usePowerCard", name: ps[h.owner].name, index: h.ci });
-        setEpic({ id: Date.now(), card: h.card, who: ps[h.owner].name, color: RING_COLORS[h.owner % 4] });
+        const info = POWER_CARD_INFO[h.card] || {};
+        if (info.reactive) {
+          // "Devolver demanda" no se juega sola: la app la ofrece cuando demandan a su dueño
+          sfx.back();
+          dp({ type: "toast", text: `${info.name} se usa sola cuando alguien te demanda.`, kind: "info" });
+        } else if (info.target) {
+          sfx.select();
+          setPicking({ h });
+        } else {
+          playCard(h);
+        }
       }
     };
     window.addEventListener("pointermove", move);
@@ -360,6 +334,14 @@ export default function OrderScene({ orders }) {
   // los tickets caben en el riel (653px): con varios se solapan
   const step = n <= 1 ? 0 : Math.min(417, Math.floor((653 - 417) / (n - 1)));
   const startX = n <= 1 ? (653 - 417) / 2 : 0;
+  // extendidos: todos los tickets caben lado a lado en el riel (se achican lo necesario)
+  const GAP = 10;
+  const wide = spread && n > 1;
+  const k = wide ? Math.min(1, (653 - GAP * (n - 1)) / (417 * n)) : 1;
+  const ticketStyle = (i) =>
+    wide
+      ? { left: i * (417 * k + GAP), zIndex: n - i, scale: String(k), transformOrigin: "0 0" }
+      : { left: startX + i * step, zIndex: n - Math.abs(i - Math.min(sel, n - 1)) };
 
   return (
     <div className={styles.root} style={{ "--s": scale }}>
@@ -372,7 +354,16 @@ export default function OrderScene({ orders }) {
         <div className={`${styles.ext} ${styles.extFront}`} />
         <div className={styles.leftStage}>
           <div className={styles.client} key={cur.id}>
-            <Dialogue order={cur} line={line} />
+            <SpeechBubble line={line} fitKey={cur.id}>
+              <div className={styles.chips}>
+                {cur.items.map((id, i) => (
+                  <span key={i} className={`${styles.chip} ${styles.chipIn}`} style={{ "--i": i }}>
+                    <CharacterAvatar id={id} size="sm" ingredient />
+                    {ingredientById(id).name}
+                  </span>
+                ))}
+              </div>
+            </SpeechBubble>
             <img
               className={styles.animal}
               src={cur.catImg}
@@ -393,6 +384,7 @@ export default function OrderScene({ orders }) {
             <img src="/scenary/common/coins.svg" alt="" draggable="false" />
             <span>{coins}</span>
           </div>
+          {happyHour && <span className={styles.happy}>Hora feliz · pedidos x2</span>}
         </div>
       </section>
 
@@ -407,11 +399,24 @@ export default function OrderScene({ orders }) {
                 order={o}
                 selected={i === Math.min(sel, n - 1)}
                 onSelect={() => setSel(i)}
-                style={{ left: startX + i * step, zIndex: n - Math.abs(i - Math.min(sel, n - 1)) }}
+                style={ticketStyle(i)}
               />
             ))}
           </div>
           <img className={styles.rail} src={ORDER + "tickettrail.svg"} alt="" aria-hidden="true" draggable="false" />
+          {n > 1 && (
+            <button
+              type="button"
+              className={styles.spreadBtn}
+              aria-pressed={wide}
+              onClick={() => {
+                sfx.select();
+                setSpread((v) => !v);
+              }}
+            >
+              {wide ? "Apilar pedidos" : `Ver los ${n} pedidos`}
+            </button>
+          )}
         </div>
       </aside>
 
@@ -482,6 +487,88 @@ export default function OrderScene({ orders }) {
           <span>
             {epic.who} usó <b>{(POWER_CARD_INFO[epic.card] || {}).name}</b>
           </span>
+        </div>
+      )}
+
+      {/* carta con objetivo: elegir a otro jugador */}
+      {picking && (
+        <div className={styles.pickLayer} role="dialog" aria-label="Elige a un jugador">
+          <div className={styles.pickBox}>
+            <img className={styles.pickCard} src={CARDS + encodeURI(picking.h.card) + ".svg"} alt="" draggable="false" />
+            <div className={styles.pickIn}>
+              <i className={styles.pausePill}>Relojes en pausa</i>
+              <b>{(POWER_CARD_INFO[picking.h.card] || {}).name}</b>
+              <span>¿A quién, {players[picking.h.owner]?.name}?</span>
+              <div className={styles.pickList}>
+                {players.map((p, pi) =>
+                  pi === picking.h.owner || finishedOf[p.name] ? null : (
+                    <button
+                      key={p.name}
+                      type="button"
+                      className={styles.pickBtn}
+                      style={{ "--pj": RING_COLORS[pi % 4] }}
+                      onClick={() => chooseTarget(p.name)}
+                    >
+                      <CharacterAvatar id={p.characterId} size="sm" />
+                      {p.name}
+                    </button>
+                  )
+                )}
+              </div>
+              <button
+                type="button"
+                className={styles.pickCancel}
+                onClick={() => {
+                  sfx.back();
+                  setPicking(null);
+                }}
+              >
+                Guardar la carta y seguir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* el demandado tiene "Devolver demanda": decide si la usa */}
+      {bounceAsk && (
+        <div className={styles.pickLayer} role="dialog" aria-label="Devolver demanda">
+          <div className={styles.pickBox}>
+            <img className={styles.pickCard} src={CARDS + encodeURI("devolver demanda") + ".svg"} alt="" draggable="false" />
+            <div className={styles.pickIn}>
+              <i className={styles.pausePill}>Relojes en pausa</i>
+              <b>¡{bounceAsk.target}, te demandan!</b>
+              <span>
+                {players[bounceAsk.h.owner]?.name} te demandó. Tienes “Devolver demanda”: si la usas, la demanda le rebota.
+              </span>
+              <div className={styles.pickList}>
+                <button
+                  type="button"
+                  className={styles.pickBtn}
+                  style={{ "--pj": "#32d8a4" }}
+                  onClick={() => {
+                    const b = bounceAsk;
+                    setBounceAsk(null);
+                    playCard(b.h, b.target, true);
+                  }}
+                >
+                  Devolver la demanda
+                </button>
+                <button
+                  type="button"
+                  className={styles.pickBtn}
+                  style={{ "--pj": "#fb471f" }}
+                  onClick={() => {
+                    const b = bounceAsk;
+                    setBounceAsk(null);
+                    playCard(b.h, b.target, false);
+                  }}
+                >
+                  Aceptarla
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

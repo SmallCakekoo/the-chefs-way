@@ -7,23 +7,7 @@ export const FINAL_NODE = "50";
 // Probabilidad de que un evento positivo también pida una carta de ayuda física de la pila (fácil de ajustar).
 export const HELP_CARD_CHANCE = 0.2;
 
-// Personajes-alimento (arte en public/alimentos/, PNG con carita, plano).
-// La escala de los PNG varia: encuadrar siempre con object-fit: contain.
-const A = (n) => `/alimentos/${encodeURI("Untitled_Artwork " + n)}.png`;
-export const CHARACTERS = [
-  { id: "queso", name: "Queso", src: A(6), tint: "var(--yellow)" },
-  { id: "huevo", name: "Huevo", src: A(4), tint: "var(--orange)" },
-  { id: "pollo", name: "Pollo", src: A(7), tint: "var(--orange)" },
-  { id: "tomate", name: "Tomate", src: A(8), tint: "var(--coral)" },
-  { id: "lechuga", name: "Lechuga", src: A(9), tint: "var(--lime)" },
-  { id: "aguacate", name: "Aguacate", src: A(5), tint: "var(--lime)" },
-  { id: "cebolla", name: "Cebolla", src: A(2), tint: "var(--berry)" },
-  { id: "carne", name: "Carne", src: A(10), tint: "var(--forest)" },
-  { id: "pan", name: "Pan", src: A(11), tint: "var(--yellow)" },
-  { id: "taco", name: "Taco", src: A(12), tint: "var(--yellow)" },
-];
-
-// Clientes-animalito: son los que eligen los jugadores (arte en public/clients/).
+// Clientes-animalito: los que piden en el mostrador (arte en public/clients/).
 const C = (n) => `/clients/${encodeURI("Animalito " + n)}.svg`;
 export const CLIENTS = [
   { id: "raton", name: "Miga", src: C(1), tint: "var(--coral)", face: [0.397, 0.186, 1.238] },
@@ -34,10 +18,21 @@ export const CLIENTS = [
   { id: "osito", name: "Tiburcio", src: C(8), tint: "var(--berry)", face: [0.503, 0.18, 1.27] },
   { id: "hamster", name: "Bombon", src: C(9), tint: "var(--yellow)", face: [0.521, 0.27, 1.258] },
 ];
-/** Estilo para encuadrar la cara de un cliente dentro de un círculo (variables CSS). */
+// Chefs-animalito: son los personajes JUGABLES (arte en public/chef character/). Los clientes de arriba solo
+// aparecen pidiendo en el mostrador. face = [x, y de la cara (fracción del ancho/alto), alto/ancho, zoom].
+const K = (n) => `/${encodeURI("chef character/Animalito " + n)}.svg`;
+export const CHEFS = [
+  { id: "chef-oso", name: "Don Bigote", src: K(8), tint: "var(--orange)", face: [0.5, 0.33, 1.785, 2.3] },
+  { id: "chef-gato", name: "Cacao", src: K(9), tint: "var(--coral)", face: [0.5, 0.33, 1.839, 2.3] },
+  { id: "chef-foca", name: "Perla", src: K(10), tint: "var(--forest)", face: [0.5, 0.33, 1.771, 2.3] },
+  { id: "chef-pollito", name: "Pío", src: K(11), tint: "var(--berry)", face: [0.5, 0.33, 1.83, 2.3] },
+  { id: "chef-perro", name: "Canelo", src: K(12), tint: "var(--lime)", face: [0.5, 0.33, 1.741, 2.3] },
+];
+
+/** Estilo para encuadrar la cara de un personaje dentro de un círculo (variables CSS). */
 export const faceStyle = (c) =>
   c.face
-    ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": 1.75 / c.face[2], "--far": c.face[2] }
+    ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": (c.face[3] || 1.75) / c.face[2], "--far": c.face[2] }
     : undefined;
 // Ingredientes (arte en public/ingredients/, SVG; en disco la carpeta va en minúscula: en Netlify importa). Tres bases + ocho ingredientes.
 // Nota: el archivo de la tortilla se llama "toritillataco.svg" (así está en la carpeta).
@@ -58,11 +53,9 @@ export const INGREDIENTS = [
 ];
 export const ingredientById = (id) => INGREDIENTS.find((i) => i.id === id) || INGREDIENTS[0];
 
+// busca un chef (jugador) o un cliente; si el id es viejo (p. ej. un personaje-alimento guardado), cae en el primer chef
 export const characterById = (id) =>
-  CHARACTERS.find((c) => c.id === id) ||
-  CLIENTS.find((c) => c.id === id) ||
-  CHARACTERS[0];
-export const PALETTE = CHARACTERS.map((c) => c.tint);
+  CHEFS.find((c) => c.id === id) || CLIENTS.find((c) => c.id === id) || CHEFS[0];
 
 /* ============================================================
    Grafo del tablero "The Chef's Way": 50 casillas y dos bifurcaciones.
@@ -136,14 +129,16 @@ export const PROGRESS = (() => {
 export function advanceGraph(from, steps) {
   let node = from;
   let left = steps;
+  const path = []; // casillas recorridas (sin la de partida)
   while (left > 0) {
     const nx = GRAPH[node]?.next || [];
-    if (nx.length === 0) return { at: from, overshoot: true, left };
-    if (nx.length > 1) return { branch: node, options: nx, steps: left };
+    if (nx.length === 0) return { at: from, overshoot: true, left, path: [] };
+    if (nx.length > 1) return { branch: node, options: nx, steps: left, path };
     node = nx[0];
+    path.push(node);
     left -= 1;
   }
-  return { at: node };
+  return { at: node, path };
 }
 
 export const CASILLA_INFO = {
@@ -169,31 +164,91 @@ export const CASILLA_INFO = {
   },
 };
 
-// Eventos positivos (casillas tipo Y). Borrador: el equipo confirma.
+/* ============================================================
+   Eventos (public/events/typeevents.md). `fx` = lo que hace la app:
+   - back: n      → el jugador en turno retrocede n casillas
+   - coins: n     → monedas del restaurante (+/-)
+   - coinsPerPlayer: n → +n monedas por cada jugador de la mesa
+   - happyHour    → durante una ronda, los pedidos entregados pagan el doble
+   - collab       → durante una ronda, si 2+ jugadores entregan pedidos, todos avanzan 1 casilla
+   - powerCard    → el jugador gana una carta de poder al azar
+   - restock      → solo en la mesa física (la app lo anuncia)
+   En los textos, {X} se cambia por el nombre del jugador en turno.
+   `needsOrdersPlayed`: el evento no sale hasta que la mesa haya jugado al menos un pedido.
+   ============================================================ */
 export const EVENTS = [
-  { title: "Propina generosa", text: "Todos los jugadores avanzan 1 casilla." },
-  { title: "Cambio de menú", text: "El siguiente pedido que salga vale doble para el empleado del mes." },
-  { title: "Turno doble", text: "Vuelve a tirar el dado en este mismo turno." },
-  { title: "Día de suerte", text: "El restaurante gana 10 monedas." },
+  { title: "Propina para todos", text: "¡Los clientes dejaron propina! El restaurante gana 100 monedas por cada jugador de la mesa.", fx: { coinsPerPlayer: 100 } },
+  { title: "Hora feliz", text: "Durante una ronda completa, cada pedido que entreguen paga el doble de monedas.", fx: { happyHour: true } },
+  // solo sale cuando ya se jugó algún pedido (antes no hay pilas gastadas que reabastecer)
+  { title: "Reabastecimiento", text: "Agreguen 2 cartas extra a la pila de ingrediente que se estaba agotando en el memory.", fx: { restock: true }, needsOrdersPlayed: true },
+  { title: "Colaboración del día", text: "Durante una ronda, si dos o más jugadores entregan pedidos, todos avanzan 1 casilla extra.", fx: { collab: true } },
+  { title: "Bono de cocina", text: "{X} recibe una carta de poder al azar.", fx: { powerCard: true } },
 ];
 
-// Eventos negativos (casillas tipo B). Borrador: el equipo confirma.
 export const NEGATIVE_EVENTS = [
-  { title: "Se cayó un plato", text: "Retrocedes 2 casillas." },
-  { title: "Hora pico", text: "Llegan dos pedidos seguidos. El siguiente jugador tira dos veces." },
-  { title: "Inspección sorpresa", text: "Nadie puede usar cartas de poder hasta tu próximo turno." },
-  { title: "Fila en la caja", text: "Pierdes tu próximo turno." },
-  { title: "Ingrediente equivocado", text: "El restaurante pierde 10 monedas." },
+  { title: "Te cortas una mano", text: "{X} se cortó picando y retrocede 4 casillas.", fx: { back: 4 } },
+  { title: "Mala reseña", text: "Un cliente dejó una mala reseña por culpa de {X}. El restaurante pierde 200 monedas.", fx: { coins: -200 } },
+  { title: "Se quemó la cocina", text: "{X} quemó la cocina. El restaurante pierde 400 monedas.", fx: { coins: -400 } },
+  { title: "Inspección sanitaria", text: "El plato de {X} falló la inspección sanitaria y se devuelve. Retrocede 4 casillas.", fx: { back: 4 } },
+  { title: "Un pelo en el plato", text: "Encontraron un pelo en el plato de {X}. Retrocede 2 casillas.", fx: { back: 2 } },
+  { title: "Glotón descubierto", text: "{X} se comió en secreto todos los ingredientes y lo vieron. Retrocede 2 casillas.", fx: { back: 2 } },
 ];
 
-// Cartas de poder (solo positivas). Arte en public/powercards/.
-export const POWER_CARDS = ["power card 1", "power card 2", "power card 3"];
-// Qué hace cada carta. PROVISIONAL: texto de relleno hasta que el equipo confirme los efectos.
+// Cartas de poder (solo positivas). Arte en public/powercards/<id>.svg.
+// `target`: la carta pide elegir a otro jugador. `reactive`: no se juega sola, se usa cuando te demandan.
 export const POWER_CARD_INFO = {
-  "power card 1": { name: "Lorem ipsum", text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit." },
-  "power card 2": { name: "Dolor sit amet", text: "Sed do eiusmod tempor incididunt ut labore et dolore." },
-  "power card 3": { name: "Consectetur", text: "Ut enim ad minim veniam, quis nostrud exercitation." },
+  "15 segundos en memory": {
+    name: "+15 segundos",
+    text: "Suma 15 segundos al reloj del pedido para jugar el memory.",
+  },
+  "dolb turno memoria": {
+    name: "Doble turno",
+    text: "En el memory de este pedido juegas dos turnos seguidos.",
+  },
+  "demandar jugador": {
+    name: "Demandar jugador",
+    text: "Elige a otro jugador: retrocede 3 casillas y pierde su próximo turno.",
+    target: true,
+  },
+  "devolver demanda": {
+    name: "Devolver demanda",
+    text: "Si alguien te demanda, la demanda le rebota: él retrocede 3 casillas y pierde su turno.",
+    reactive: true,
+  },
+  "robar dee ingrediente a otro jugador": {
+    name: "Robar ingrediente",
+    text: "Elige a otro jugador y quédate con una de sus cartas de ingrediente del memory.",
+    target: true,
+  },
 };
+export const POWER_CARDS = Object.keys(POWER_CARD_INFO);
+export const DEMAND_STEPS = 3;
+export const EXTRA_MEMORY_MS = 15_000;
+
+/** Casillas por las que se vuelve (inverso del grafo). */
+const PREV = {};
+Object.entries(NEXT).forEach(([id, nx]) => nx.forEach((m) => (PREV[m] = [...(PREV[m] || []), id])));
+
+/** Retrocede `steps` casillas desde `from`. Donde dos caminos se juntan (21 y 44), vuelve por el que el
+ *  jugador realmente recorrió (`trail` = casillas por las que pasó). Nunca va más atrás de la salida. */
+export function retreatGraph(from, steps, trail = []) {
+  const seen = new Set(trail);
+  let node = from;
+  for (let i = 0; i < steps; i++) {
+    const prev = PREV[node] || [];
+    if (!prev.length) break;
+    node = prev.find((p) => seen.has(p)) || prev[0];
+  }
+  return node;
+}
+
+/** Avanza 1 casilla fuera del turno (Colaboración del día). En una bifurcación sigue por el camino largo;
+ *  no entra a la meta (a la meta solo se llega con el número exacto del dado). */
+export function stepForward(from) {
+  const nx = GRAPH[from]?.next || [];
+  if (!nx.length || nx[0] === FINAL_NODE) return from;
+  return nx[0];
+}
 
 // Pips del dado (coordenadas en viewBox 0..100)
 export const DIE_PIPS = {

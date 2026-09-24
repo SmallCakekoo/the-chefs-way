@@ -1,20 +1,21 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext.jsx";
-import { INGREDIENTS, CLIENTS, ingredientById } from "../game/board.js";
+import { INGREDIENTS, CHEFS, CLIENTS, ingredientById } from "../game/board.js";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
-import { evaluate } from "../game/achievements.js";
+import { evaluate, LOCKED_IMG } from "../game/achievements.js";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
 import styles from "./ProfileScreen.module.css";
 
 const P = "/scenary/profile/";
 
-// El avatar puede ser un ingrediente o un cliente-animalito.
+// El avatar puede ser un chef (los personajes jugables) o un ingrediente.
 const PAGES = [
+  { title: "Chefs", items: CHEFS },
   { title: "Ingredientes", items: INGREDIENTS },
-  { title: "Clientes", items: CLIENTS },
 ];
-const avatarOf = (id) => CLIENTS.find((c) => c.id === id) || ingredientById(id);
+// (los clientes quedan por si venía guardado un avatar de antes)
+const avatarOf = (id) => CHEFS.find((c) => c.id === id) || CLIENTS.find((c) => c.id === id) || ingredientById(id);
 
 /** Perfil (profile/finalidea.svg): libro abierto con pestañas.
  *  Ficha: izquierda personajes (ingredientes / clientes), derecha tu chef.
@@ -24,7 +25,7 @@ export default function ProfileScreen() {
   const scale = useStageScale();
   const [tab, setTab] = useState("perfil");
   const [confirmOut, setConfirmOut] = useState(false);
-  const [page, setPage] = useState(() => (CLIENTS.some((c) => c.id === profile.characterId) ? 1 : 0));
+  const [page, setPage] = useState(() => (INGREDIENTS.some((c) => c.id === profile.characterId) ? 1 : 0));
   const [pick, setPick] = useState(0); // logro elegido (índice)
   const achievements = evaluate(stats);
   const unlocked = achievements.filter((a) => a.unlocked).length;
@@ -186,7 +187,7 @@ export default function ProfileScreen() {
                       {a.img ? (
                         <img
                           className={styles.pic}
-                          src={a.img}
+                          src={a.unlocked ? a.img : LOCKED_IMG}
                           alt={`Logro ${a.name}: ${a.desc}${a.unlocked ? "" : " (bloqueado)"}`}
                           draggable="false"
                         />
@@ -210,7 +211,7 @@ export default function ProfileScreen() {
                 {ach.img ? (
                   <img
                     className={styles.pic}
-                    src={ach.img}
+                    src={ach.unlocked ? ach.img : LOCKED_IMG}
                     alt={`Logro ${ach.name}: ${ach.desc}${ach.unlocked ? "" : " (bloqueado)"}`}
                     draggable="false"
                   />
@@ -224,6 +225,9 @@ export default function ProfileScreen() {
               <p className={styles.aDesc}>
                 {ach.desc}
                 {ach.scope === "host" && <em>Logro de anfitrión</em>}
+              </p>
+              <p className={`${styles.aProgress} ${ach.unlocked ? styles.aDone : ""}`}>
+                {ach.unlocked ? "¡Desbloqueado!" : `Progreso: ${ach.have} de ${ach.goal}`}
               </p>
             </div>
           </>
