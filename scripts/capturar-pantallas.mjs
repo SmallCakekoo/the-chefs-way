@@ -301,7 +301,8 @@ await grupo("Chef Maestro, veredicto y restaurante triunfador", ["15-chef-maestr
   await empezarPartida(page);
   await dispatch(page, { type: "applyMove", name: "Isa", square: "50" }); // llega a la meta: visita el Chef
   await page.waitForFunction(() => window.__game().route === "finale");
-  await capturar(page, "15-chef-maestro", { espera: 3000 });
+  // entra el Chef (2,6 s), piensa (3 s) y dice su pedido en el globo: se captura con la frase ya escrita
+  await capturar(page, "15-chef-maestro", { espera: 8500 });
 
   // recorre la escena de verdad: la mesa arma el memory, el Chef dicta y la mesa entrega la comanda
   await page.getByRole("button", { name: "Listos, dicte ya" }).click({ timeout: 90_000 });
