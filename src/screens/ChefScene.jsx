@@ -5,6 +5,7 @@ import { CHEF, CHEF_FOODS, chefDictSec, chefPatienceSec, scoreChef, chefCoinsFor
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
 import PlayerRing from "../components/PlayerRing.jsx";
 import ChefHat from "../components/ChefHat.jsx";
+import SpeechBubble from "../components/SpeechBubble.jsx";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
 import base from "./OrderScene.module.css";
@@ -12,6 +13,9 @@ import styles from "./ChefScene.module.css";
 
 const ORDER = "/scenary/order/";
 const SEATS = ["tl", "tr", "bl", "br"];
+// el globo del Chef: en el mismo lugar que el de los clientes (el Chef está parado donde ellos), un poco más abajo
+// porque el gorro lo hace más alto
+const CHEF_BUBBLE = { right: 740, base: 400 };
 
 /* Fases: enter (entra el Chef) → tension (silencio, latidos) → reveal (dice qué plato pide) → prep (la mesa arma el memory)
    → dictate (dicta la receta y la oculta) → answer (la mesa elige de memoria) → verdict (estrellas). */
@@ -131,50 +135,57 @@ export default function ChefScene() {
           <img className={base.counter} src={ORDER + encodeURI("estanteríafrontal.svg")} alt="" aria-hidden="true" draggable="false" />
           <span className={styles.nameplate}>{CHEF.name}</span>
 
-          {/* globo del Chef */}
+          {/* globo del Chef: el mismo globo ilustrado de los clientes */}
           {phase !== "enter" && phase !== "tension" && phase !== "verdict" && (
-            <div className={styles.bubble} key={phase}>
+            <div key={phase} className={styles.bubbleWrap}>
               {phase === "reveal" && (
-                <>
-                  <small>Hoy pido…</small>
-                  <b>{chef.title}</b>
-                  <span>{chef.recipe.length} ingredientes. Sin margen de error.</span>
+                <SpeechBubble
+                  right={CHEF_BUBBLE.right}
+                  base={CHEF_BUBBLE.base}
+                  line={`Hoy pido… ¡${chef.title}! ${chef.recipe.length} ingredientes. Sin margen de error.`}
+                  fitKey={chef.changed ? "changed" : ""}
+                >
                   {chef.changed && (
-                    <em>
+                    <p className={styles.changed}>
                       Cambié un ingrediente: sale <u>{nameOf(chef.changed.out)}</u>, entra <u>{nameOf(chef.changed.in)}</u>.
-                    </em>
+                    </p>
                   )}
-                </>
+                </SpeechBubble>
               )}
               {phase === "prep" && (
-                <>
-                  <small>Todos a la mesa</small>
-                  <b>Armen el memory</b>
-                  <span>Cuando esté listo, les dicto la receta.</span>
+                <SpeechBubble
+                  right={CHEF_BUBBLE.right}
+                  base={CHEF_BUBBLE.base}
+                  line="Todos a la mesa: armen el memory. Cuando esté listo, les dicto la receta."
+                >
                   <button type="button" className={styles.skip} onClick={() => go("dictate")}>
                     Listos, dicte ya
                   </button>
-                </>
+                </SpeechBubble>
               )}
               {phase === "dictate" && (
-                <>
-                  <small>Memoricen, la borro en {Math.ceil(dictLeft)} s</small>
-                  <div className={styles.recipe}>
-                    {chef.recipe.map((id) => (
-                      <span key={id} className={styles.rchip}>
-                        <CharacterAvatar id={id} size="md" ingredient />
+                <SpeechBubble
+                  right={CHEF_BUBBLE.right}
+                  base={CHEF_BUBBLE.base}
+                  line={`¡Memoricen! La borro en ${dictSec} segundos:`}
+                >
+                  <div className={base.chips}>
+                    {chef.recipe.map((id, i) => (
+                      // sin esperar a que termine de escribirse: el tiempo de dictado ya está corriendo
+                      <span key={id} className={`${base.chip} ${styles.rchip}`} style={{ "--i": i }}>
+                        <CharacterAvatar id={id} size="sm" ingredient />
                         {nameOf(id)}
                       </span>
                     ))}
                   </div>
-                </>
+                </SpeechBubble>
               )}
               {phase === "answer" && (
-                <>
-                  <small>La receta ya no existe</small>
-                  <b>¿Qué les pedí?</b>
-                  <span>Elijan en la comanda los ingredientes que recuerden.</span>
-                </>
+                <SpeechBubble
+                  right={CHEF_BUBBLE.right}
+                  base={CHEF_BUBBLE.base}
+                  line="La receta ya no existe. ¿Qué les pedí? Elijan en la comanda los ingredientes que recuerden."
+                />
               )}
             </div>
           )}
@@ -253,7 +264,7 @@ export default function ChefScene() {
                       {phase === "prep"
                         ? `Memory en la mesa: ${Math.ceil(prepLeft)} s`
                         : phase === "dictate"
-                          ? "Mirando la receta…"
+                          ? `Memoricen la receta: ${Math.ceil(dictLeft)} s`
                           : "La comanda se abre pronto"}
                     </p>
                   </div>

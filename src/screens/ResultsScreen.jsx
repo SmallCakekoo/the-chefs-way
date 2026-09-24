@@ -35,7 +35,7 @@ export default function ResultsScreen() {
   const chefStars = chefResult?.stars ?? 0;
 
   const message = bankrupt
-    ? "Se acabaron las moneditas: demasiados pedidos se vencieron antes de entregarse."
+    ? "Se acabaron las moneditas: entre pedidos vencidos y accidentes en la cocina, el restaurante no aguantó."
     : chefLeft
       ? "El Chef se fue sin probar el plato y el restaurante perdió reputación. Aun así, la cocina sigue abierta."
       : winner
@@ -48,6 +48,14 @@ export default function ResultsScreen() {
 
       {/* izquierda: balance */}
       <section className={styles.left}>
+        {/* fondo del cierre: fiesta de ingredientes si el restaurante sigue abierto, tormenta si quebró */}
+        <img
+          className={styles.backdrop}
+          src={`/events/${encodeURI(bankrupt ? "bad end" : "good end")}.svg`}
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
         <div className={styles.leftStage}>
           <div className={styles.ribbon}>
             <img src="/scenary/tablero/liston.svg" alt="" draggable="false" />

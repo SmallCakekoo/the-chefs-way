@@ -19,8 +19,8 @@ export const ORDER_INTERVALS = {
 };
 export const DEFAULT_INTERVAL = "normal";
 
-// Segundos para que la mesa arme el tablero de memoria al llegar el pedido.
-export const PREP_MS = 20_000;
+// Segundos para que la mesa arme el tablero de memoria al llegar el pedido (30 s).
+export const PREP_MS = 30_000;
 
 // Tiempo extra (despues del prep) para completar el checklist antes de que
 // el pedido se venza solo. Total desde que llega = PREP_MS + ORDER_WORK_MS.
@@ -29,9 +29,9 @@ export const ORDER_WORK_MS = 40_000;
 // Economia del restaurante: monedas iniciales, premio por entregar a tiempo,
 // castigo por dejar que un pedido se venza. Si las monedas llegan a 0, el
 // restaurante quiebra y se acaba la partida.
-export const COIN_START = 100;
-export const COIN_REWARD = 12;
-export const COIN_PENALTY = 18;
+export const COIN_START = 1000;
+export const COIN_REWARD = 120;
+export const COIN_PENALTY = 180;
 
 export function intervalMs(key) {
   const base = (ORDER_INTERVALS[key] || ORDER_INTERVALS[DEFAULT_INTERVAL]).ms;
@@ -57,17 +57,14 @@ export const DISHES = [
   { id: "hamburguesa", name: "Hamburguesa", pide: "una hamburguesita", base: ["pan-hamburguesa"], protein: ["carne"], extras: ["queso", "lechuga", "tomate", "huevo", "cebolla"], weight: 4 },
 ];
 
-const CATS = ["Michi", "Pelusa", "Manchas", "Nube", "Bigotes", "Croqueta"];
-
-// El cliente se ve como uno de los animalitos de la selección (CLIENTS en board.js),
-// pero conserva su nombre de siempre.
-// `used` = nombres que ya están en la mesa: dos clientes a la vez no comparten nombre.
+// El cliente es uno de los animalitos de public/clients/ (CLIENTS en board.js) y SIEMPRE con su nombre
+// (el osito siempre es Tiburcio, el ratón siempre es Miga…).
+// `used` = clientes que ya están en la mesa: dos pedidos a la vez nunca son del mismo cliente.
 function pickClient(used = new Set()) {
-  const free = CATS.filter((n) => !used.has(n));
-  const cat = pick(free.length ? free : CATS);
-  used.add(cat);
-  const c = pick(CLIENTS);
-  return { cat, catId: c.id, catImg: c.src };
+  const free = CLIENTS.filter((c) => !used.has(c.name));
+  const c = pick(free.length ? free : CLIENTS);
+  used.add(c.name);
+  return { cat: c.name, catId: c.id, catImg: c.src };
 }
 
 // Frases del gato (máquina de escribir). Tiernas y educadas; nombran el plato.

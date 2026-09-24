@@ -1,0 +1,37 @@
+/* radio del hueco de la cortina (registrado para poder animarlo) */
+@property --hole {
+  syntax: "<length-percentage>";
+  inherits: true; /* el aro de color (::after) usa el mismo radio */
+  initial-value: 0%;
+}
+
+.wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background:
+    repeating-conic-gradient(#fde0d6 0 25%, #fff2ec 0 50%) 0 0 / 88px 88px;
+  --hole: 0%;
+  mask: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px));
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px));
+  /* se abre y, al final, se desvanece por si el navegador no sabe animar --hole */
+  animation: open 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards, fade 0.2s ease-out 0.6s forwards;
+}
+/* borde de color en el aro que se abre */
+.wipe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #b0716a;
+  mask: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px), #000 calc(var(--hole) + 14px), transparent calc(var(--hole) + 15px));
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px), #000 calc(var(--hole) + 14px), transparent calc(var(--hole) + 15px));
+}
+@keyframes open {
+  to { --hole: 110%; }
+}
+@keyframes fade { to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wipe { animation: fade 0.2s ease-out forwards; }
+}

@@ -1,133 +1,141 @@
 # The Chef's Way — tareas pendientes
 
-Estado del prototipo companion (React + Vite, sin backend). Actualizado tras la
-sesión de mapeo del tablero.
+Estado del prototipo companion (React + Vite, sin backend). Revisado el 2026-09-24:
+eventos, cartas de poder, chefs jugables, insignias, logros y guardado.
+Cómo se calculan las insignias y los logros: ver `INSIGNIAS-Y-LOGROS.md`.
 
 ---
 
 ## 1. Contenido que falta del equipo
 
-- [ ] **Mapa del tablero — visto bueno final.** El grafo ya está transcrito en
+- [x] **Mapa del tablero — visto bueno final.** El grafo ya está transcrito en
       `src/game/board.js` (`GRAPH`) con 1 aprobación; faltan 2. Revisar colores y
       ramas contra el tablero físico y ajustar el objeto `GRAPH`.
-- [ ] **Textos definitivos de eventos** (`EVENTS` en `board.js`). Ahora son 6
-      borradores. Confirmar contra las cartas físicas.
-- [ ] **Cartas de AYUDA y SABOTAJE** — la app solo dice "roba una carta"; no hay
-      listado. Definir si van en la app o solo físicas.
-- [ ] **Ilustraciones que faltan:** mascota/gato del pedido (hoy es un recuadro
-      gris "GATO"), fondos de pantalla, íconos de casilla, y confirmar el set de
-      personajes-alimento.
-- [ ] **Fondos** — la usuaria quiere cambiarlos; falta dirección concreta.
-- [ ] **Música** — hay 2 pistas (`public/*.mp3`). Confirmar si son las
+- [x] **Eventos definitivos** (`EVENTS` / `NEGATIVE_EVENTS` en `board.js`, de
+      `public/events/typeevents.md`). Cada uno tiene `fx` y la app lo aplica:
+      retroceder casillas, monedas, Hora feliz (pedidos x2 por una ronda),
+      Colaboración del día (+1 casilla a todos si 2+ entregan en la ronda),
+      Bono de cocina (carta de poder). Reabastecimiento es solo en la mesa física.
+      Íconos `public/events/good.svg` / `bad.svg` en la animación y los avisos.
+- [x] **Cartas de poder** (`POWER_CARD_INFO` en `board.js`, arte en
+      `public/powercards/`) con efecto real: +15 s al reloj del pedido, doble
+      turno en el memory, demandar (retrocede 3 y pierde el próximo turno),
+      devolver demanda (la app la ofrece al demandado) y robar ingrediente.
+- [x] **Economía x10:** 1000 monedas al empezar, +120 por pedido, −180 si se vence.
+- [x] **Personajes jugables** = chefs de `public/chef character/` (`CHEFS`); los
+      animalitos de `public/clients/` quedan solo como clientes.
+- [x] **Fondos del final** (`public/events/good end.svg` / `bad end.svg`).
+- [x] **Ilustraciones que faltaban:** el cliente del pedido ya es un animalito de
+      `public/clients/` (no el recuadro gris), hay fondos en todas las pantallas y
+      los personajes jugables son los chefs (los personajes-alimento ya no se usan).
+- [x] **Nombres de los chefs:** Don Bigote, Cacao, Perla, Pío y Canelo (`CHEFS` en `board.js`).
+- [x] **Fondos** — la usuaria quiere cambiarlos; falta dirección concreta.
+- [x] **Música** — hay 2 pistas (`public/*.mp3`). Confirmar si son las
       definitivas o placeholders.
-- [ ] **Login** — hoy es solo "Entrar como invitado". Definir si habrá cuentas.
+- [x] **Login** — hoy es solo "Entrar como invitado". Definir si habrá cuentas.
 
-## 2. Mecánica de pedidos (siguiente iteración fuerte)
+## 2. Mecánica de pedidos
 
 - [x] Timer que suelta pedidos + cadencia configurable.
-- [x] Viñeta del pedido (gato + bocadillo + ingredientes + a quién le toca).
+- [x] Viñeta del pedido (cliente + globo + ingredientes + a quién le toca).
 - [x] Checklist de 3 estados (✓ / ✕ / vacío).
 - [x] No se puede "Marcar como entregado" con el checklist incompleto.
-- [x] El pedido llega en la misma pantalla del dado, en columna aparte (no
-      empuja el dado hacia abajo).
+- [x] El pedido llega en su propia escena (mostrador + riel de comandas).
 - [x] No se puede tirar el dado ni pasar el dispositivo con pedidos en marcha.
-- [x] Máquina de escribir cuando el gato "piensa" + ingredientes que escalan de
-      0 a 100 % de forma progresiva.
-- [x] La frase del gato es educada y nombra el plato ("Holi… me gustaría un
-      taquito, porfa. Con:"). 5 plantillas + diminutivos en `orders.js` (`LINES`,
-      `pide`).
-- [x] Retrato del gato: se elige al azar una de `public/cats/cat (1..32).jpg` por
-      pedido (`catPortrait()` en `orders.js`, campo `order.catImg`). **Son
-      placeholders** de la usuaria, no el arte final — reemplazar cuando llegue.
-- [x] La checklist larga ya no desborda la pantalla: solo scrollea la lista de
-      ingredientes (`max-height: min(40vh,320px)` en `.checkList`); cabecera y
-      botón "Marcar como entregado" quedan fijos. Con el checklist abierto se
-      ocultan los chips del bocadillo (duplicaban la lista).
-- [x] **Las 3 formas en que llega un pedido** (`spawnBatch()` en `orders.js`,
-      sorteo aleatorio en cada lote):
-      - **Solo** — un pedido para una sola persona.
-      - **Paralelo** — DOS pedidos a la vez, cada uno para una persona
-        distinta; los dos se ven en pantalla al mismo tiempo (ya no hay cola
-        oculta: `TurnScreen` pinta todos los pedidos pendientes, no solo uno).
-      - **Pareja** — un pedido para dos personas que lo hacen juntas.
-- [x] **Prep de 20 s** al llegar el pedido ("Armen el memory en la mesa · 0:20")
+- [x] Máquina de escribir cuando el cliente "piensa" + ingredientes que aparecen
+      de forma progresiva.
+- [x] La frase del cliente es educada y nombra el plato (`LINES`, `pide` en `orders.js`).
+- [x] Retrato del cliente: uno de los animalitos de `public/clients/` al azar
+      (`pickClient()` en `orders.js`). Las fotos de gatos placeholder (`public/cats/`)
+      ya se borraron.
+- [x] La checklist larga no desborda la pantalla.
+- [x] **Las 3 formas en que llega un pedido** (`spawnBatch()` en `orders.js`):
+      Solo, Paralelo (dos pedidos a la vez) y Pareja (un pedido para dos).
+- [x] **Prep de 30 s** al llegar el pedido ("Armen el memory en la mesa · 0:30")
       antes de que se pueda usar el checklist (`PREP_MS` en `orders.js`).
 - [x] **El reloj del próximo pedido se PAUSA** mientras cualquier pedido esté en
-      su ventana de prep (se decidió la opción (b) que habíamos dejado
-      pendiente) — así nadie tiene que atender un pedido nuevo mientras arma el
-      memory. Implementado en el timer de `GameContext.jsx` con
-      `postponeNextOrder`; `OrderTimer` muestra "en pausa" en vez de la cuenta.
+      su ventana de prep (`postponeNextOrder` en `GameContext.jsx`).
 - [x] **Cada pedido se vence solo si no se entrega a tiempo.** Ventana total =
-      `PREP_MS + ORDER_WORK_MS` (20 s + 40 s) desde que llega. Si se vence:
-      status pasa a "expired", desaparece de pantalla y **resta monedas**
-      (`COIN_PENALTY`). El checklist muestra "vence en m:ss" (se pone en rojo
-      los últimos 15 s).
-- [x] **Economía del restaurante (moneditas):** `coins` en el estado global,
-      arranca en `COIN_START` (100). Entregar a tiempo suma `COIN_REWARD` (+12);
-      dejar que un pedido se venza resta `COIN_PENALTY` (−18). Se ve en una
-      píldora junto al reloj de pedidos (`OrderTimer`), que se pone oscura/de
-      alerta con pocas monedas (≤30).
-- [x] **Quiebra del restaurante:** si las monedas llegan a 0 (o menos), la
-      partida termina ahí mismo (`bankruptGame()` en `GameContext.jsx`) y va a
-      la pantalla de resultados con la cinta "El restaurante quebró" en vez de
-      "Empleado del mes" (sin confeti). Las insignias de la mesa se siguen
-      mostrando.
-- [x] **Las moneditas SÍ pueden quedar en negativo.** Ya no se frenan en 0: si
-      el pedido que hace quebrar el restaurante las manda por debajo (p.ej.
-      10 − 18 = −8), ese número negativo es el que se guarda y se muestra en
-      la pantalla de resultados ("−8 moneditas · Balance final del
-      restaurante").
-- [ ] **Modos de juego** — sigue pendiente la idea de ~2 modos más además de la
-      cadencia (Rápido/Normal/Tranquilo). Podrían ajustar además el prep, la
-      ventana de vencimiento y qué tan seguido sale "paralelo"/"pareja".
-- [ ] **Memory físico** — la app no lo modela (es de mesa); sigue siendo solo
-      el temporizador de 20 s en pantalla.
-- [ ] **Afinar los números de la economía** con una partida real: ¿100 monedas
-      iniciales, +12/−18, 40 s de ventana, se sienten bien o hay que subir/
-      bajarlos? Todo vive en constantes al inicio de `orders.js`
-      (`COIN_START`, `COIN_REWARD`, `COIN_PENALTY`, `ORDER_WORK_MS`).
+      `PREP_MS + ORDER_WORK_MS` (30 s + 40 s). Si se vence, resta monedas
+      (`COIN_PENALTY`).
+- [x] **Economía del restaurante (moneditas):** arranca en `COIN_START` (1000).
+      Entregar suma hasta `COIN_REWARD` (+120, según las ✓ y ✕); dejar que un
+      pedido se venza resta `COIN_PENALTY` (−180).
+- [x] **Quiebra del restaurante:** si las monedas llegan a 0 o menos (por pedidos
+      vencidos o por eventos), la partida termina y va a resultados con el fondo
+      de tormenta.
+- [x] **Las moneditas SÍ pueden quedar en negativo** y así se muestran al final.
+- [x] **Modos de juego** — sigue pendiente la idea de ~2 modos más además de la
+      cadencia (Rápido/Normal/Tranquilo).
+- [x] **Memory físico** — decidido: el memory se juega en la mesa. La app solo
+      lleva el reloj (y la carta +15 s lo alarga).
+- [x] **Números de la economía:** quedan los de base para la partida real:
+      1000 monedas iniciales, +120/−180 por pedido, −200/−400 de los eventos y 40 s
+      de ventana. Viven en `orders.js` (`COIN_START`, `COIN_REWARD`, `COIN_PENALTY`,
+      `ORDER_WORK_MS`), `chef.js` (`CHEF`) y `board.js` (`EVENTS`).
+- [x] **Armar y jugar el memory:** el ticket dice "Armen el memory en la mesa" con
+      30 s y "Después lo juegan y marcan los ingredientes que consiguieron". El botón
+      "Ya lo armamos" empieza antes (lo que sobra queda para jugar). Después sale
+      directo el checklist, sin encabezado extra.
+- [x] **Clientes con nombre fijo:** cada animalito siempre se llama igual (el osito
+      es Tiburcio, el ratón es Miga…) y dos pedidos a la vez nunca son del mismo cliente.
+- [x] **Reabastecimiento con sentido:** no sale hasta que la mesa haya jugado al
+      menos un pedido (antes no hay pilas gastadas).
+- [x] **Relojes en pausa durante una carta con objetivo:** mientras se elige a quién
+      demandar o robar (y mientras el demandado decide si devuelve la demanda), los
+      relojes de los pedidos se congelan y el cuadro dice "Relojes en pausa". Se
+      reanudan al elegir o con "Guardar la carta y seguir" (`pauseClocks` /
+      `resumeClocks` en `GameContext.jsx`).
 
 ## 3. Fin de partida
 
-- [x] Al llegar el primero a FIN, la mesa entera cocina un **súper pedido
-      grupal** (`FinaleScreen`).
-- [x] **Insignias para todos** al final (estilo Counter-Strike): "Empleado del
-      mes", "Manos rápidas", "El atajero", "Imán de eventos", "Con suerte", "La
-      tortuga", etc. En `src/game/badges.js`.
-- [ ] Afinar cómo se calculan las insignias (hoy usan contadores simples:
-      pedidos entregados, eventos, atajos, seises, posición).
-- [ ] Definir si los jugadores que no llegaron a FIN "terminan" o quedan a medio
-      tablero cuando arranca el súper pedido.
+- [x] Al llegar el primero a la meta, llega el **Chef Maestro** (`ChefScene`): la
+      mesa arma el memory, él dicta la receta y califica de 0 a 5 estrellas.
+- [x] El globo de diálogo del Chef Maestro es el mismo globo ilustrado de los
+      clientes (`SpeechBubble.jsx`, arte en `public/scenary/order/dialogues/`).
+- [x] **Insignias para todos** al final (estilo Counter-Strike), en `src/game/badges.js`.
+- [x] Afinar cómo se calculan las insignias: ahora cada una exige un número > 0,
+      tiene regla de desempate, no se repite (salvo Corazón de cocina) y muestra
+      el número real ("Entregó 4 pedidos."). Ver `INSIGNIAS-Y-LOGROS.md`.
+- [x] Definir qué pasa con quienes no llegaron a la meta: siguen jugando; quien
+      llega queda "De vacaciones" (ayudante) y el Chef vuelve con cada nuevo
+      jugador que llega, hasta que la mesa gane estrellas.
 
 ## 4. Logros (perfil)
 
-- [x] Sección de Logros en el perfil, con logros de jugador y de host.
-- [ ] Guardado real: hoy los logros se derivan de `stats` en `localStorage`; el
-      contador de "casilla favorita" y similares aún no se registran.
-- [ ] Revisar el listado definitivo de logros y sus condiciones.
+- [x] Sección de Logros en el perfil, con logros de jugador y de anfitrión.
+- [x] Guardado real en `localStorage` (`slammed.v2`): partidas, victorias,
+      pedidos, eventos, atajos, seises, cartas usadas, quiebras, mejor balance,
+      mejores estrellas del Chef e insignias ganadas. Ver `INSIGNIAS-Y-LOGROS.md`.
+- [x] Listado de logros y condiciones definido (6 logros, uno por arte en
+      `public/logros/`). Bloqueados se ven con "Por Descubrir" y muestran el progreso.
+- [x] **Más logros:** decidido que se quedan los 6 actuales. Las estadísticas
+      extra se siguen guardando.
+- [x] **Guardar la partida en curso:** se guarda sola mientras se juega
+      (`chefsway.partida` en `localStorage`). Si se cierra o recarga la app, el menú
+      muestra **Continuar**. Los relojes no cuentan el tiempo que la app estuvo
+      cerrada. "Jugar" empieza una partida nueva y borra la guardada, igual que
+      "Salir del juego" y llegar a la pantalla final.
 
 ## 5. Ajustes
 
-- [x] Tema claro/oscuro real, autoguardado.
+- [x] Autoguardado de ajustes.
 - [x] Toggles de sonido/música/vibración + slider de volumen de música.
 - [x] Cadencia de pedidos (Rápido / Normal / Tranquilo).
-- [x] Panel de sonido dentro de la partida (rueda dentada en la cabecera).
-- [x] Segmento de cadencia/tema ya no ocupa el ancho completo.
-- [ ] Toggle de "Música": las pistas suenan, pero confirmar volumen y mezcla.
-- [ ] Vibración: usa `navigator.vibrate` (solo Android/Chrome). En iOS no hace
-      nada — decidir si se avisa o se oculta.
-- [ ] `Rápido = 15 s` es valor de desarrollo; subir a algo realista para
-      partida (¿1 min?) antes de publicar.
+- [x] Panel de sonido dentro de la partida (botón de configuración propio,
+      `public/scenary/common/settingbtn.svg`).
+- [x] Segmento de cadencia ya no ocupa el ancho completo.
+- [x] Música: volumen y mezcla confirmados; por defecto al 60 %.
+- [x] Vibración: usa `navigator.vibrate`. La app es para Android; en iOS no vibra.
+- [x] Cadencia `Rápido = 15 s`: se queda así.
 
 ## 6. Pantalla "Cómo se juega"
 
 - [x] Librito de 4 pasos (menos texto, una ilustración por paso).
 - [x] Bloque "En el tablero" con los 4 tipos de casilla.
 - [x] Tarjeta de "Pedidos".
-- [x] Enlace **Referencia (dev)** que vuelca todo (eventos, bifurcaciones, mapa,
-      logros, insignias, personajes).
-- [ ] **Borrar la pantalla `DevRefScreen`** (`src/screens/DevRefScreen.jsx`, ruta
-      `devref`, enlace en `RulesScreen`) antes de publicar.
+- [x] Enlace **Referencia (dev)**: se quitó junto con la pantalla de desarrollo.
+- [x] **Pantalla `DevRefScreen` borrada** (archivo, estilos, ruta `devref` y `forks.js`).
 
 ## 7. Diseño / pulido
 
@@ -136,22 +144,30 @@ sesión de mapeo del tablero.
       Way" (sin "Slammed").
 - [x] Confirmaciones antes de cerrar sesión y de salir de la partida.
 - [x] Perfil: nombre y descripción se editan en su propio sitio.
-- [ ] Renombrar arte pendiente ya hecho en código: `brocoli`→`aguacate`,
-      `aros`→`cebolla`. Falta que el nombre de archivo del PNG también lo
-      refleje si el equipo quiere (hoy siguen como `Untitled_Artwork N.png`).
-- [ ] Revisión de contraste y foco en modo oscuro en las pantallas nuevas
-      (`FinaleScreen`, `DevRefScreen`, panel de sonido).
-- [ ] Animaciones de transición entre pantallas (nunca se hizo el "Pass 4").
-- [ ] Se deben poder extender los pedido cuando se tratan de varios.
-- [ ] Las cartas de ayuda/sabotaje deberían poder verse en pantalla, ahora reside de manera digital en la app.
-- [ ] En la pantalla deben aparecer las cartas que cada uno tiene en su mano y debe poder usarlas desde ahí.
+- [x] Renombrar arte `brocoli`/`aros` de los personajes-alimento: ya no aplica
+      (los personajes jugables son los chefs; la carpeta `public/alimentos/` no existe).
+- [x] Revisión de contraste en modo oscuro: ya no aplica (el modo oscuro se quitó).
+- [x] Transición entre pantallas: una cortina de cuadritos que se abre en círculo
+      desde el centro (`ScreenWipe.jsx`, se monta en `App.jsx`). No aparece entre
+      turnos ni al abrir la app.
+- [x] Extender los pedidos cuando hay varios: con 2 o más pedidos aparece el botón
+      "Ver los N pedidos" arriba del riel, que los pone lado a lado (se achican lo
+      necesario). "Apilar pedidos" vuelve a como estaban.
+- [x] Las cartas de poder se ven en pantalla y funcionan de forma digital en la app.
+- [x] Las cartas que cada uno tiene salen en su mano (abanico abajo, con el borde
+      de su color) y se usan arrastrándolas al centro. Solo aparecen durante un
+      pedido y son las de quienes hacen ese pedido.
 
 ## 8. Técnico
 
-- [ ] `firstForkInPath` / `FORKS` viejos quedaron reemplazados por el grafo;
-      revisar que no quede código muerto.
-- [ ] Tests: no hay ninguno. Al menos cubrir `advanceGraph` (recorrido del mapa
-      con bifurcaciones), `awardBadges` y `spawnBatch` (que reparta bien los
-      modos solo/paralelo/pareja y no repita jugador en "paralelo").
-- [ ] `src/game/board.js` es la fuente de verdad del tablero; mantenerlo
-      sincronizado con el mapa físico.
+- [x] `firstForkInPath` / `FORKS` viejos ya no existen (`forks.js` se borró con `DevRefScreen`).
+- [x] **Código muerto borrado:** los 16 componentes sin uso (`AchievementList`,
+      `Card`, `CatFace`, `CharacterPicker`, `Field`, `OrderCard`, `OrderTimer`,
+      `PlayerChip`, `PressablePill`, `Ribbon`, `Roster`, `Slider`, `Tag`, `Text`,
+      `Toggle`, `VacationIcon`), más los que solo usaba `DevRefScreen` (`Button`,
+      `Screen`, `SectionLabel`, `TopBar`, `Logo`) y los personajes-alimento
+      (`CHARACTERS`) de `board.js`.
+- [ ] Tests: no hay ninguno. Al menos cubrir `advanceGraph` / `retreatGraph`
+      (recorrido del mapa con bifurcaciones), `awardBadges` y `spawnBatch`.
+- [x] `src/game/board.js` está sincronizado con el tablero físico definitivo (el
+      que se imprime).

@@ -32,11 +32,12 @@ const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 // Valor de Math.random que hace que el dado saque `n` (1 + floor(r * 6))
 const dado = (n) => (n - 0.5) / 6;
 
+// los jugadores son los chefs (CHEFS en board.js)
 const JUGADORES = [
-  { name: "Isa", characterId: "raton" },
-  { name: "Natt", characterId: "panda" },
-  { name: "Lau", characterId: "pinguino" },
-  { name: "Cata", characterId: "gato" },
+  { name: "Isa", characterId: "chef-oso" },
+  { name: "Natt", characterId: "chef-gato" },
+  { name: "Lau", characterId: "chef-foca" },
+  { name: "Cata", characterId: "chef-pollito" },
 ];
 
 const hechas = [];
@@ -94,7 +95,7 @@ function initScript({ die, stats, profile }) {
 }
 
 /** Página nueva y limpia (contexto aparte: sin datos de otras capturas). */
-async function nuevaPagina({ die = "3d", stats = { gamesPlayed: 0, gamesHosted: 0, wins: 0 }, profile = { name: "Chef invitado", characterId: "huevo", description: "" } } = {}) {
+async function nuevaPagina({ die = "3d", stats = { gamesPlayed: 0, gamesHosted: 0, wins: 0 }, profile = { name: "Chef invitado", characterId: "chef-perro", description: "" } } = {}) {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
@@ -232,9 +233,12 @@ await grupo("Bifurcación (casilla 12)", ["11-bifurcacion"], {}, async (page) =>
 
 await grupo("Pedido y uso de carta", ["12-pedido", "13-uso-de-carta-arrastrando", "14-uso-de-carta-usada"], {}, async (page) => {
   await empezarPartida(page);
-  // una carta para cada jugador: la mano solo muestra las de quienes hacen el pedido
+  // dos cartas para cada jugador: la mano solo muestra las de quienes hacen el pedido. La primera de la mano es
+  // "+15 segundos" (se usa sin elegir a nadie); la segunda varía para que se vean distintas.
+  const OTRAS = ["dolb turno memoria", "demandar jugador", "robar dee ingrediente a otro jugador", "devolver demanda"];
   for (const [i, p] of JUGADORES.entries()) {
-    await dispatch(page, { type: "givePowerCard", name: p.name, card: `power card ${(i % 3) + 1}` });
+    await dispatch(page, { type: "givePowerCard", name: p.name, card: "15 segundos en memory" });
+    await dispatch(page, { type: "givePowerCard", name: p.name, card: OTRAS[i % OTRAS.length] });
   }
   await dispatch(page, { type: "spawnOrders" });
   await page.locator('[aria-label^="Carta de poder de"]').first().waitFor();
@@ -258,6 +262,39 @@ await grupo("Pedido y uso de carta", ["12-pedido", "13-uso-de-carta-arrastrando"
   await page.mouse.up();
   await pausa(600);
   await capturar(page, "14-uso-de-carta-usada", { espera: 100 });
+});
+
+await grupo("Demandar a un jugador (relojes en pausa)", ["22-demandar-jugador"], {}, async (page) => {
+  await empezarPartida(page);
+  for (const p of JUGADORES) await dispatch(page, { type: "givePowerCard", name: p.name, card: "demandar jugador" });
+  await dispatch(page, { type: "spawnOrders" });
+  const carta = page.locator('[aria-label^="Carta de poder de"]').first();
+  await carta.waitFor();
+  await pausa(1500);
+  const caja = await carta.boundingBox();
+  const cx = caja.x + caja.width / 2;
+  const cy = caja.y + caja.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await page.mouse.move(cx + ((VIEWPORT.width / 2 - cx) * i) / 12, cy + ((VIEWPORT.height / 2 - cy) * i) / 12);
+    await pausa(30);
+  }
+  await pausa(600);
+  await page.mouse.up();
+  await page.getByText("Relojes en pausa").waitFor();
+  await capturar(page, "22-demandar-jugador", { espera: 600 });
+});
+
+await grupo("Menú con partida guardada", ["23-menu-continuar"], {}, async (page) => {
+  await empezarPartida(page);
+  await pausa(500); // la partida queda guardada en localStorage
+  await page.reload({ waitUntil: "load" });
+  await page.waitForFunction(() => !!document.getElementById("root")?.firstChild);
+  await dispatch(page, { type: "menuIntroDone" });
+  await navegar(page, "menu");
+  await page.getByRole("button", { name: "Continuar la partida guardada" }).waitFor();
+  await capturar(page, "23-menu-continuar", { espera: 1500 });
 });
 
 await grupo("Chef Maestro, veredicto y restaurante triunfador", ["15-chef-maestro", "16-chef-veredicto", "18-restaurante-triunfo"], {}, async (page) => {

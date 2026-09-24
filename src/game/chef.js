@@ -18,9 +18,9 @@ export const CHEF = {
   basePatienceSec: 100, // paciencia del Chef para elegir y entregar (intento 1)
   minPatienceSec: 45,
   patienceStepSec: 15, // menos paciencia por cada intento
-  starCoins: 25, // monedas por estrella
-  failCost: 30, // cuesta cada fallo
-  leavePenalty: 40, // reputación perdida si el Chef se va
+  starCoins: 250, // monedas por estrella
+  failCost: 300, // cuesta cada fallo
+  leavePenalty: 400, // reputación perdida si el Chef se va
 };
 
 // Ingredientes que existen (ids de INGREDIENTS). El checklist ofrece TODOS para que la mesa elija de memoria.

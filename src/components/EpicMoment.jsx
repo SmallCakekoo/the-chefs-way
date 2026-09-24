@@ -36,9 +36,8 @@ export default function EpicMoment({ kind = "good", card, title, sub, text, colo
       {card ? (
         <img className={styles.card} src={"/powercards/" + encodeURI(card) + ".svg"} alt="" draggable="false" />
       ) : (
-        <div className={styles.medal}>
-          <img src="/scenary/player register/star.svg" alt="" draggable="false" />
-        </div>
+        // ícono del evento: confeti (positivo) o nube de tormenta (negativo)
+        <img className={styles.icon} src={`/events/${kind === "bad" ? "bad" : "good"}.svg`} alt="" draggable="false" />
       )}
       {[1, 3, 5, 7].map((i) => spark(i, "front"))}
       <div className={styles.text}>

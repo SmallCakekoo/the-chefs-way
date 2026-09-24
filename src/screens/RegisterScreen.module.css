@@ -117,13 +117,13 @@
 .arrowR:hover { transform: translateX(6px); }
 .arrow:active { transform: scale(0.94); }
 
-/* el cliente está "parado": pies al borde inferior de la pantalla (los últimos píxeles quedan cortados) */
+/* el chef está "parado" sobre el piso de la cocina, de cuerpo entero (gorro incluido) */
 .stageCat {
   position: absolute;
   left: 0;
   width: 1100px;
   top: 330px;
-  height: 800px;
+  height: 700px;
   pointer-events: none;
   z-index: 1;
 }
@@ -131,7 +131,7 @@
   position: absolute;
   bottom: 0;
   /* centrado por el cuerpo (--fx), no por la imagen: los que tienen cola se ven descentrados si no */
-  left: calc(550px - var(--fx, 0.5) * 800px / var(--far, 1.2));
+  left: calc(550px - var(--fx, 0.5) * 700px / var(--far, 1.2));
   display: block;
   height: 100%;
   width: auto;
@@ -144,7 +144,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -70px;
+  top: -96px;
   left: 250px;
   right: 250px;
   text-align: center;

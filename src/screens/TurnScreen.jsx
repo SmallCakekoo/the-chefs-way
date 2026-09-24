@@ -16,6 +16,7 @@ import {
 import Die from "../components/Die.jsx";
 import PlayerRing from "../components/PlayerRing.jsx";
 import EpicMoment from "../components/EpicMoment.jsx";
+import Toasts from "../components/Toasts.jsx";
 import OrderScene from "./OrderScene.jsx";
 import GameSettings from "../components/GameSettings.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
@@ -30,20 +31,27 @@ const SEATS = ["tl", "tr", "bl", "br"];
 // Color de cada jugador (el de su aro), para el borde de sus cartas.
 const PJ = ["#fb471f", "#45b2f9", "#32d8a4", "#ffd42a"];
 
-function outcomeFor(nodeId, name) {
+/** `ordersPlayed` = cuántos pedidos ya se jugaron (entregados o vencidos): algunos eventos esperan a que haya alguno. */
+function outcomeFor(nodeId, name, ordersPlayed = 0) {
   if (nodeId === FINAL_NODE) {
     return { tag: "a", title: `${name} llegó al final`, text: "", node: nodeId };
   }
   const info = CASILLA_INFO[GRAPH[nodeId]?.c] || CASILLA_INFO.O;
   const out = { ...info, node: nodeId, title: info.label };
-  if (info.tag === "y") out.event = EVENTS[Math.floor(Math.random() * EVENTS.length)];
-  if (info.tag === "b") out.event = NEGATIVE_EVENTS[Math.floor(Math.random() * NEGATIVE_EVENTS.length)];
+  const list = info.tag === "y" ? EVENTS : info.tag === "b" ? NEGATIVE_EVENTS : null;
+  if (list) {
+    const pool = list.filter((e) => !e.needsOrdersPlayed || ordersPlayed > 0);
+    const ev = pool[Math.floor(Math.random() * pool.length)];
+    // {X} = el jugador que cayó en la casilla
+    out.event = { ...ev, title: ev.title.replaceAll("{X}", name), text: ev.text.replaceAll("{X}", name) };
+  }
   return out;
 }
 const casillaLabel = (id) => (id === START_NODE ? "la salida" : `la casilla ${id}`);
 
 export default function TurnScreen() {
-  const { players, currentPlayer, currentName, posOf, orders, coins, turnNo, finishedOf, dispatch } = useGame();
+  const { players, currentPlayer, currentName, posOf, orders, coins, turnNo, finishedOf, happyHour, collabOn, dispatch } =
+    useGame();
   const scale = useStageScale();
   const [phase, setPhase] = useState("idle"); // idle | rolling | fork | result
   const [dieValue, setDieValue] = useState(null);
@@ -62,17 +70,23 @@ export default function TurnScreen() {
   const pendingOrders = orders.filter((o) => o.status === "pending" && !o.finale);
   const blocked = pendingOrders.length > 0;
 
-  const settle = (nodeId, tookShortcut) => {
+  const settle = (nodeId, tookShortcut, path) => {
     if (tookShortcut) dispatch({ type: "noteShortcut", name: currentName });
-    dispatch({ type: "applyMove", name: currentName, square: nodeId });
-    const out = outcomeFor(nodeId, currentName);
-    if (out.event) dispatch({ type: "noteEvent", name: currentName });
-    // evento positivo: además, con cierta probabilidad, gana una carta de poder (la misma tarjeta de la casilla de carta)
-    const bonusCard = out.tag === "y" && nodeId !== FINAL_NODE && Math.random() < HELP_CARD_CHANCE;
+    dispatch({ type: "applyMove", name: currentName, square: nodeId, path });
+    const out = outcomeFor(nodeId, currentName, orders.filter((o) => o.status !== "pending").length);
+    if (out.event) {
+      dispatch({ type: "noteEvent", name: currentName });
+      // lo que hace el evento: retroceder, monedas, hora feliz, colaboración…
+      dispatch({ type: "applyEvent", name: currentName, fx: out.event.fx });
+    }
+    // Bono de cocina: la carta es el evento. Los demás eventos positivos dan carta con cierta probabilidad.
+    const eventCard = !!out.event?.fx?.powerCard;
+    const bonusCard =
+      out.tag === "y" && nodeId !== FINAL_NODE && (eventCard || Math.random() < HELP_CARD_CHANCE);
     if ((out.tag === "a" && nodeId !== FINAL_NODE) || bonusCard) {
       const card = POWER_CARDS[Math.floor(Math.random() * POWER_CARDS.length)];
       out.card = card;
-      out.bonus = bonusCard;
+      out.bonus = bonusCard && !eventCard;
       dispatch({ type: "givePowerCard", name: currentName, card });
     }
     if (out.tag === "a" && nodeId !== FINAL_NODE) {
@@ -93,7 +107,8 @@ export default function TurnScreen() {
   };
 
   // camina el grafo; si topa una bifurcación, pausa y pregunta
-  const walk = (from, steps, roll, tookShortcut) => {
+  // `path` = casillas ya recorridas en esta tirada (para poder retroceder luego por el mismo camino)
+  const walk = (from, steps, roll, tookShortcut, path = []) => {
     const r = advanceGraph(from, steps);
     if (r.overshoot) {
       // se pasaría de la meta: se queda donde estaba hasta sacar el número exacto
@@ -108,11 +123,11 @@ export default function TurnScreen() {
       return;
     }
     if (r.branch) {
-      setFork({ from: r.branch, options: r.options, steps: r.steps, roll, tookShortcut });
+      setFork({ from: r.branch, options: r.options, steps: r.steps, roll, tookShortcut, path: [...path, ...r.path] });
       setPhase("fork");
     } else {
       setFork(null);
-      settle(r.at, tookShortcut);
+      settle(r.at, tookShortcut, [...path, ...r.path]);
     }
   };
 
@@ -133,7 +148,7 @@ export default function TurnScreen() {
 
   const chooseFork = (nextId) => {
     const took = fork.tookShortcut || SHORTCUT_NODES.has(nextId);
-    walk(nextId, fork.steps - 1, fork.roll, took);
+    walk(nextId, fork.steps - 1, fork.roll, took, [...fork.path, nextId]);
   };
 
   const idx = Math.max(0, players.findIndex((p) => p.name === currentName));
@@ -192,22 +207,13 @@ export default function TurnScreen() {
         </button>
         <button
           className={`${styles.iconBtn} ${styles.gearBtn}`}
-          aria-label="Sonido"
+          aria-label="Configuración"
           onClick={() => {
             sfx.tap();
             setShowSettings(true);
           }}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" strokeWidth="2.2" />
-            <path
-              d="M12 3.6v2.6M12 17.8v2.6M3.6 12h2.6M17.8 12h2.6M6 6l1.9 1.9M16.1 16.1 18 18M18 6l-1.9 1.9M7.9 16.1 6 18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <img src={COMMON + "settingbtn.svg"} alt="" draggable="false" />
         </button>
 
         {/* jugador en turno */}
@@ -227,6 +233,13 @@ export default function TurnScreen() {
             {coins}
           </span>
         </div>
+        {/* eventos que duran una ronda */}
+        {(happyHour || collabOn) && (
+          <div className={styles.buffs}>
+            {happyHour && <span className={styles.buff}>Hora feliz · pedidos x2</span>}
+            {collabOn && <span className={styles.buff}>Colaboración del día</span>}
+          </div>
+        )}
         {/* dado + botón */}
         {phase !== "fork" && (
           <div
@@ -259,6 +272,10 @@ export default function TurnScreen() {
             draggable="false"
             style={{ "--pj": PJ[idx % 4] }}
           />
+        )}
+        {/* evento positivo que además dio carta: la etiqueta va sobre la carta (en el cuadro no cabe) */}
+        {phase === "result" && result?.card && result.bonus && (
+          <span className={styles.wonTag}>¡Carta extra!</span>
         )}
 
         {cardOpen && (
@@ -306,7 +323,6 @@ export default function TurnScreen() {
                     {result.event && <span className={styles.eyebrow}>{result.title}</span>}
                     <p className={styles.title}>{result.event ? result.event.title : result.title}</p>
                     <p className={styles.text}>{result.event ? result.event.text : result.text}</p>
-                    {result.bonus && <p className={styles.bonus}>¡Y ganaste una carta!</p>}
                   </div>
                 </div>
                 <button
@@ -344,6 +360,7 @@ export default function TurnScreen() {
         />
       )}
       {pendingOrders.length === 0 && <div className={styles.rim} />}
+      <Toasts />
       <GameSettings open={showSettings} onClose={() => setShowSettings(false)} />
       <ConfirmDialog
         open={confirmExit}
