@@ -6,7 +6,7 @@ export const STAGE_H = 1080;
 export const BASE = "/scenary/menu/";
 
 export const MENU_FILES = [
-  "logo.svg",
+  "logo.webp",
   "btn.svg",
   "pointer.svg",
   "table.svg",

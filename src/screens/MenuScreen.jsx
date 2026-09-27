@@ -91,7 +91,7 @@ export default function MenuScreen() {
             key={"l" + (playing.pot || 0) + "-" + (playing.flame || 0)}
             className={`${styles.logoInner} ${playing.pot ? styles.hop : ""} ${playing.flame ? styles.shake : ""}`}
           >
-            <img src={BASE + "logo.svg"} alt="The Chef's Way" draggable="false" />
+            <img src={BASE + "logo.webp"} alt="The Chef's Way" draggable="false" />
             <span className={`${styles.eye} ${styles.eyeL}`} aria-hidden="true" />
             <span className={`${styles.eye} ${styles.eyeR}`} aria-hidden="true" />
           </div>

@@ -8,8 +8,8 @@
    Los números salen de `perPlayer` (GameContext): orders, assigned, expired, events, shortcuts, sixes, rolls, cards. */
 import { PROGRESS, FINAL_NODE } from "./board.js";
 
-// arte en public/insignias/ (un archivo por insignia; "¿Con suerte?" está guardado como "¿Con suerte_.svg")
-const B = (file) => encodeURI(`/insignias/${file}.svg`);
+// arte en public/insignias/ (un archivo por insignia; "¿Con suerte?" está guardado como "¿Con suerte_.webp")
+const B = (file) => encodeURI(`/insignias/${file}.webp`);
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 export const BADGES = [

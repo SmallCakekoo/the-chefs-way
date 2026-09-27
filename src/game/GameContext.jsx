@@ -163,6 +163,7 @@ function makeInitial() {
     collab: null, // Colaboración del día: { until, doers: [], done }
     toasts: [], // avisos cortos: { id, text, kind }
     movedTurn: -1, // último turno en el que el jugador en turno ya movió su ficha
+    holdUntil: 0, // ningún pedido NUEVO llega antes de esta hora (el jugador está tirando o leyendo su resultado)
     pausedAt: null, // relojes en pausa (p. ej. mientras se elige a quién demandar)
     savedGame: !!loadSavedGame(), // hay una partida guardada para "Continuar"
     ...p,
@@ -339,6 +340,7 @@ function reducer(state, action) {
         toasts: [],
         movedTurn: -1,
         pausedAt: null,
+        holdUntil: 0,
         trailOf: Object.fromEntries(order.map((n) => [n, [START_NODE]])),
         nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
         stats: { ...normalizeStats(state.stats), gamesHosted: (state.stats.gamesHosted || 0) + 1 },
@@ -556,6 +558,10 @@ function reducer(state, action) {
       };
     }
 
+    // la tirada en curso retiene los pedidos nuevos: el que tocaba llega apenas termine la espera
+    case "holdOrders":
+      return { ...state, holdUntil: action.until };
+
     // pausa y reanuda los relojes de los pedidos (el tiempo en pausa no cuenta)
     case "pauseClocks":
       return state.pausedAt ? state : { ...state, pausedAt: Date.now() };
@@ -569,7 +575,7 @@ function reducer(state, action) {
       const g = loadSavedGame();
       if (!g) return { ...state, savedGame: false };
       const away = Date.now() - (g.pausedAt || g.savedAt || Date.now());
-      let next = shiftClocks({ ...state, ...g, pausedAt: null, toasts: [], badges: null, bankrupt: false }, Math.max(0, away));
+      let next = shiftClocks({ ...state, ...g, pausedAt: null, holdUntil: 0, toasts: [], badges: null, bankrupt: false }, Math.max(0, away));
       next = { ...next, route: g.route === "finale" && next.chef && !next.chefResult ? "finale" : "turn" };
       // si el jugador en turno ya había movido su ficha, sigue el siguiente
       if (next.route === "turn" && next.movedTurn === next.turnNo) next = advanceTurn(next);
@@ -606,6 +612,7 @@ function reducer(state, action) {
         toasts: [],
         movedTurn: -1,
         pausedAt: null,
+        holdUntil: 0,
         savedGame: false,
         route: "menu",
       };
@@ -833,7 +840,8 @@ export function GameProvider({ children }) {
         if (s.nextOrderAt) dispatch({ type: "postponeNextOrder", ms: delta });
         return;
       }
-      if (s.nextOrderAt && now >= s.nextOrderAt) {
+      // no se interrumpe una tirada: el pedido espera a que el jugador termine de ver su resultado
+      if (s.nextOrderAt && now >= s.nextOrderAt && now >= (s.holdUntil || 0)) {
         dispatch({ type: "spawnOrders" });
       }
     }, 1000);

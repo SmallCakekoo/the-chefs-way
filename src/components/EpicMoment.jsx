@@ -34,10 +34,10 @@ export default function EpicMoment({ kind = "good", card, title, sub, text, colo
       <div className={styles.rays} />
       {[0, 2, 4, 6].map((i) => spark(i, "back"))}
       {card ? (
-        <img className={styles.card} src={"/powercards/" + encodeURI(card) + ".svg"} alt="" draggable="false" />
+        <img className={styles.card} src={"/powercards/" + encodeURI(card) + ".webp"} alt="" draggable="false" />
       ) : (
         // ícono del evento: confeti (positivo) o nube de tormenta (negativo)
-        <img className={styles.icon} src={`/events/${kind === "bad" ? "bad" : "good"}.svg`} alt="" draggable="false" />
+        <img className={styles.icon} src={`/events/${kind === "bad" ? "bad" : "good"}.webp`} alt="" draggable="false" />
       )}
       {[1, 3, 5, 7].map((i) => spark(i, "front"))}
       <div className={styles.text}>

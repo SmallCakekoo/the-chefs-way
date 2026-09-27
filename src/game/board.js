@@ -8,7 +8,7 @@ export const FINAL_NODE = "50";
 export const HELP_CARD_CHANCE = 0.2;
 
 // Clientes-animalito: los que piden en el mostrador (arte en public/clients/).
-const C = (n) => `/clients/${encodeURI("Animalito " + n)}.svg`;
+const C = (n) => `/clients/${encodeURI("Animalito " + n)}.webp`;
 export const CLIENTS = [
   { id: "raton", name: "Miga", src: C(1), tint: "var(--coral)", face: [0.397, 0.186, 1.238] },
   { id: "panda", name: "Bambu", src: C(2), tint: "var(--lime)", face: [0.517, 0.183, 1.384] },
@@ -20,7 +20,7 @@ export const CLIENTS = [
 ];
 // Chefs-animalito: son los personajes JUGABLES (arte en public/chef character/). Los clientes de arriba solo
 // aparecen pidiendo en el mostrador. face = [x, y de la cara (fracción del ancho/alto), alto/ancho, zoom].
-const K = (n) => `/${encodeURI("chef character/Animalito " + n)}.svg`;
+const K = (n) => `/${encodeURI("chef character/Animalito " + n)}.webp`;
 export const CHEFS = [
   { id: "chef-oso", name: "Don Bigote", src: K(8), tint: "var(--orange)", face: [0.5, 0.33, 1.785, 2.3] },
   { id: "chef-gato", name: "Cacao", src: K(9), tint: "var(--coral)", face: [0.5, 0.33, 1.839, 2.3] },
@@ -34,9 +34,9 @@ export const faceStyle = (c) =>
   c.face
     ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": (c.face[3] || 1.75) / c.face[2], "--far": c.face[2] }
     : undefined;
-// Ingredientes (arte en public/ingredients/, SVG; en disco la carpeta va en minúscula: en Netlify importa). Tres bases + ocho ingredientes.
+// Ingredientes (arte en public/ingredients/, WebP; en disco la carpeta va en minúscula: en Netlify importa). Tres bases + ocho ingredientes.
 // Nota: el archivo de la tortilla se llama "toritillataco.svg" (así está en la carpeta).
-const I = (file) => `/ingredients/${file}.svg`;
+const I = (file) => `/ingredients/${file}.webp`;
 export const INGREDIENTS = [
   // fondo por grupo: bases #81695F · pollo, carne, cebolla, tomate #FCD73D · queso, huevo #50EBC9 · lechuga, aguacate #78D6F6
   { id: "pan-sandwich", name: "Pan", src: I("breadsandwich"), tint: "#81695f", base: true },
@@ -194,7 +194,7 @@ export const NEGATIVE_EVENTS = [
   { title: "Glotón descubierto", text: "{X} se comió en secreto todos los ingredientes y lo vieron. Retrocede 2 casillas.", fx: { back: 2 } },
 ];
 
-// Cartas de poder (solo positivas). Arte en public/powercards/<id>.svg.
+// Cartas de poder (solo positivas). Arte en public/powercards/<id>.webp.
 // `target`: la carta pide elegir a otro jugador. `reactive`: no se juega sola, se usa cuando te demandan.
 export const POWER_CARD_INFO = {
   "15 segundos en memory": {

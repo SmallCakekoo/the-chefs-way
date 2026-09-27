@@ -51,7 +51,7 @@ export default function LoginScreen() {
       <div className={styles.center}>
         <img
           className={styles.logo}
-          src={BASE + "logo.svg"}
+          src={BASE + "logo.webp"}
           alt="The Chef's Way"
           draggable="false"
         />

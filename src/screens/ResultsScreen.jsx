@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useGame } from "../game/GameContext.jsx";
 import { characterById, faceStyle } from "../game/board.js";
 import Confetti from "../components/Confetti.jsx";
+import Lightning from "../components/Lightning.jsx";
 import ChefHat from "../components/ChefHat.jsx";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
@@ -44,14 +45,15 @@ export default function ResultsScreen() {
 
   return (
     <main className={styles.root} style={{ "--s": scale }}>
-      {!bankrupt && <Confetti />}
+      {/* triunfo: confeti · quiebra: relámpagos que hacen parpadear la pantalla en blanco */}
+      {bankrupt ? <Lightning /> : <Confetti />}
 
       {/* izquierda: balance */}
       <section className={styles.left}>
         {/* fondo del cierre: fiesta de ingredientes si el restaurante sigue abierto, tormenta si quebró */}
         <img
           className={styles.backdrop}
-          src={`/events/${encodeURI(bankrupt ? "bad end" : "good end")}.svg`}
+          src={`/events/${encodeURI(bankrupt ? "bad end" : "good end")}.webp`}
           alt=""
           aria-hidden="true"
           draggable="false"

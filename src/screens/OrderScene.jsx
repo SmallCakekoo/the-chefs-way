@@ -460,7 +460,7 @@ export default function OrderScene({ orders }) {
                 setDrag({ key: h.key, dx: 0, dy: 0, over: false, armed: false });
               }}
             >
-              <img src={CARDS + encodeURI(h.card) + ".svg"} alt="" draggable="false" />
+              <img src={CARDS + encodeURI(h.card) + ".webp"} alt="" draggable="false" />
             </button>
           );
         })}
@@ -483,7 +483,7 @@ export default function OrderScene({ orders }) {
       {/* al usar una carta durante un pedido: aviso pequeño y suave (la animación épica es del tablero) */}
       {epic && (
         <div className={styles.soft} key={epic.id} style={{ "--pj": epic.color }} aria-live="polite">
-          <img src={CARDS + encodeURI(epic.card) + ".svg"} alt="" draggable="false" />
+          <img src={CARDS + encodeURI(epic.card) + ".webp"} alt="" draggable="false" />
           <span>
             {epic.who} usó <b>{(POWER_CARD_INFO[epic.card] || {}).name}</b>
           </span>
@@ -494,7 +494,7 @@ export default function OrderScene({ orders }) {
       {picking && (
         <div className={styles.pickLayer} role="dialog" aria-label="Elige a un jugador">
           <div className={styles.pickBox}>
-            <img className={styles.pickCard} src={CARDS + encodeURI(picking.h.card) + ".svg"} alt="" draggable="false" />
+            <img className={styles.pickCard} src={CARDS + encodeURI(picking.h.card) + ".webp"} alt="" draggable="false" />
             <div className={styles.pickIn}>
               <i className={styles.pausePill}>Relojes en pausa</i>
               <b>{(POWER_CARD_INFO[picking.h.card] || {}).name}</b>
@@ -534,7 +534,7 @@ export default function OrderScene({ orders }) {
       {bounceAsk && (
         <div className={styles.pickLayer} role="dialog" aria-label="Devolver demanda">
           <div className={styles.pickBox}>
-            <img className={styles.pickCard} src={CARDS + encodeURI("devolver demanda") + ".svg"} alt="" draggable="false" />
+            <img className={styles.pickCard} src={CARDS + encodeURI("devolver demanda") + ".webp"} alt="" draggable="false" />
             <div className={styles.pickIn}>
               <i className={styles.pausePill}>Relojes en pausa</i>
               <b>¡{bounceAsk.target}, te demandan!</b>

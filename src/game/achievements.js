@@ -4,7 +4,7 @@
    `img` es la ilustración; bloqueado se ve "Por Descubrir". */
 
 // arte en public/logros/ (un archivo por logro, con el título del logro como nombre)
-const L = (name) => encodeURI(`/logros/${name}.svg`);
+const L = (name) => encodeURI(`/logros/${name}.webp`);
 export const LOCKED_IMG = L("Por Descubrir");
 
 export const ACHIEVEMENTS = [

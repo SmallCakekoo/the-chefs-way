@@ -158,6 +158,16 @@ Cómo se calculan las insignias y los logros: ver `INSIGNIAS-Y-LOGROS.md`.
       de su color) y se usan arrastrándolas al centro. Solo aparecen durante un
       pedido y son las de quienes hacen ese pedido.
 
+- [x] **Imágenes a WebP:** chefs, clientes, cartas de poder, logros, insignias,
+      íconos y fondos de eventos, ingredientes y logo (eran SVG con un PNG adentro).
+      De 54 MB a 3 MB. Script: `node scripts/convertir-webp.mjs`. Los vectores de
+      Figma (botones, mesón, marcos, cuchillos, salsas…) siguen en SVG.
+- [x] **Los pedidos no interrumpen la tirada:** mientras rueda el dado, se elige
+      rama, sale la animación del evento o la carta y unos segundos para leer, no
+      entra ningún pedido nuevo; el que tocaba llega justo después (`holdOrders`).
+- [x] **Relámpagos en la quiebra:** la pantalla final parpadea en blanco como si
+      cayeran rayos (`Lightning.jsx`); en el triunfo sigue el confeti.
+
 ## 8. Técnico
 
 - [x] `firstForkInPath` / `FORKS` viejos ya no existen (`forks.js` se borró con `DevRefScreen`).

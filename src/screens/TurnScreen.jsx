@@ -47,6 +47,13 @@ function outcomeFor(nodeId, name, ordersPlayed = 0) {
   }
   return out;
 }
+/* Tiempos de la tirada: mientras corren, no entra ningún pedido nuevo (ver `holdOrders` en GameContext).
+   Si le tocaba llegar a uno, llega apenas termina la espera. */
+const HOLD_ROLLING_MS = 60_000; // dado girando o eligiendo rama (se acorta al ver el resultado)
+const HOLD_READ_MS = 3_000; // leer una casilla normal
+const HOLD_CARD_MS = 5_000; // ver la carta de poder que se ganó
+const HOLD_EVENT_MS = 3_600 + 4_000; // animación del evento (3,6 s) + leer la tarjeta
+const HOLD_NEXT_MS = 1_500; // el dispositivo pasa de mano
 const casillaLabel = (id) => (id === START_NODE ? "la salida" : `la casilla ${id}`);
 
 export default function TurnScreen() {
@@ -102,6 +109,9 @@ export default function TurnScreen() {
         text: out.event.text,
       });
     }
+    // tiempo para ver la animación y leer antes de que pueda llegar un pedido
+    const read = out.event ? HOLD_EVENT_MS : out.card ? HOLD_CARD_MS : HOLD_READ_MS;
+    dispatch({ type: "holdOrders", until: Date.now() + read });
     setResult(out);
     setPhase("result");
   };
@@ -119,6 +129,7 @@ export default function TurnScreen() {
         text: `Sacaste un ${roll} y te pasas de la meta por ${r.left}. No avanzas: tienes que sacar justo lo que te falta para llegar a la casilla ${FINAL_NODE}.`,
         node: pos,
       });
+      dispatch({ type: "holdOrders", until: Date.now() + HOLD_READ_MS });
       setPhase("result");
       return;
     }
@@ -134,6 +145,8 @@ export default function TurnScreen() {
   const roll = () => {
     if (blocked) return;
     sfx.roll();
+    // mientras rueda el dado (y si toca elegir rama) no llega ningún pedido
+    dispatch({ type: "holdOrders", until: Date.now() + HOLD_ROLLING_MS });
     setPhase("rolling");
     const final = 1 + Math.floor(Math.random() * 6);
     // el cubo gira varias vueltas y frena en la cara que salió; después se mueve la ficha
@@ -267,7 +280,7 @@ export default function TurnScreen() {
           <img
             key={result.card}
             className={styles.won}
-            src={"/powercards/" + encodeURI(result.card) + ".svg"}
+            src={"/powercards/" + encodeURI(result.card) + ".webp"}
             alt="Carta de poder ganada"
             draggable="false"
             style={{ "--pj": PJ[idx % 4] }}
@@ -331,6 +344,7 @@ export default function TurnScreen() {
                   disabled={blocked}
                   onClick={() => {
                     sfx.tap();
+                    dispatch({ type: "holdOrders", until: Date.now() + HOLD_NEXT_MS });
                     dispatch({ type: "nextTurn" });
                   }}
                 >

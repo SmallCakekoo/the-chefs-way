@@ -77,7 +77,7 @@
   box-shadow: 0 0 0 calc(16px * var(--s)) #fb471f, 0 calc(20px * var(--s)) calc(60px * var(--s)) rgb(0 0 0 / 0.6);
 }
 .bad .medal img { filter: hue-rotate(-40deg) saturate(2.4) brightness(0.85); }
-/* ícono del evento (public/events/good.svg · bad.svg), sin marco: el arte ya trae su forma */
+/* ícono del evento (public/events/good.webp · bad.webp), sin marco: el arte ya trae su forma */
 .icon {
   z-index: 3;
   width: calc(400px * var(--s));

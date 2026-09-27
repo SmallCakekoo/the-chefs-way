@@ -22,7 +22,7 @@ export default function Toasts() {
       {toasts.map((t) => (
         <p key={t.id} className={`${styles.toast} ${styles[t.kind] || ""}`}>
           {t.kind !== "info" && (
-            <img src={`/events/${t.kind === "bad" ? "bad" : "good"}.svg`} alt="" aria-hidden="true" draggable="false" />
+            <img src={`/events/${t.kind === "bad" ? "bad" : "good"}.webp`} alt="" aria-hidden="true" draggable="false" />
           )}
           <span>{t.text}</span>
         </p>
