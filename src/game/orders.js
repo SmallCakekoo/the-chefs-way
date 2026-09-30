@@ -159,6 +159,39 @@ function buildOrder(seq, now, assignees, used) {
 // Las 3 formas en que puede llegar un lote de pedidos.
 const SPAWN_MODES = ["solo", "paralelo", "pareja"];
 
+// Rotación estable de a quién le toca: bolsa barajada con todos los jugadores; nadie repite
+// hasta que a todos les haya tocado. Al rellenar la bolsa, los que acaban de cocinar van al
+// final, así nunca le toca al mismo dos veces seguidas.
+let turnBag = [];
+let turnKey = "";
+let lastTurn = [];
+function drawPlayers(players, count) {
+  const key = players.join("|");
+  if (key !== turnKey) {
+    turnKey = key;
+    turnBag = [];
+    lastTurn = [];
+  }
+  const out = [];
+  while (out.length < count && out.length < players.length) {
+    if (!turnBag.length) {
+      const recent = new Set([...lastTurn, ...out]);
+      const fresh = sample(players, players.length);
+      turnBag = [...fresh.filter((p) => !recent.has(p)), ...fresh.filter((p) => recent.has(p))];
+    }
+    // primero alguien que no haya cocinado en el lote anterior; si no hay, el siguiente de la bolsa
+    let i = turnBag.findIndex((p) => !out.includes(p) && !lastTurn.includes(p));
+    if (i < 0) i = turnBag.findIndex((p) => !out.includes(p));
+    if (i < 0) {
+      turnBag = [];
+      continue;
+    }
+    out.push(turnBag.splice(i, 1)[0]);
+  }
+  lastTurn = out;
+  return out;
+}
+
 /** Genera el siguiente lote de pedidos (1 o 2, segun la forma sorteada).
  *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa.
  *  Devuelve { orders, seq } con el nuevo contador. */
@@ -169,18 +202,18 @@ export function spawnBatch(seq, players, taken = []) {
   let n = seq;
 
   if (mode === "paralelo") {
-    const [a, b] = sample(players, 2);
+    const [a, b] = drawPlayers(players, 2);
     const o1 = buildOrder(++n, now, [a], used);
     const o2 = buildOrder(++n, now, [b], used);
     return { orders: [o1, o2], seq: n, mode };
   }
   if (mode === "pareja") {
-    const pair = sample(players, Math.min(2, players.length));
+    const pair = drawPlayers(players, 2);
     const o = buildOrder(++n, now, pair, used);
     return { orders: [o], seq: n, mode };
   }
   // solo
-  const [a] = sample(players, 1);
+  const [a] = drawPlayers(players, 1);
   const o = buildOrder(++n, now, a ? [a] : [], used);
   return { orders: [o], seq: n, mode };
 }

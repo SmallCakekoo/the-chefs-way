@@ -196,7 +196,7 @@ await grupo("Juego con dado 3D", ["05-juego-dado-3d"], { die: "3d" }, async (pag
 
 await grupo("Evento positivo (casilla 5, con carta de poder extra)", ["06-evento-positivo-momento", "07-evento-positivo-tarjeta"], {}, async (page) => {
   await empezarPartida(page);
-  await tirar(page, 4, [0.1, 0.05, 0]); // 1 + 4 = casilla 5 · primer evento · sale carta de poder extra · primera carta
+  await tirar(page, 4, [0.6, 0.05, 0]); // 1 + 4 = casilla 5 · "Colaboración del día" (título con tilde) · sale carta de poder extra · primera carta
   await page.getByRole("button", { name: "Pasar el dispositivo" }).waitFor();
   await pausa(1700); // el momento épico a mitad de animación
   await capturar(page, "06-evento-positivo-momento", { espera: 0 });
@@ -207,7 +207,7 @@ await grupo("Evento positivo (casilla 5, con carta de poder extra)", ["06-evento
 await grupo("Evento negativo (casilla 14)", ["08-evento-negativo-momento", "09-evento-negativo-tarjeta"], {}, async (page) => {
   await empezarPartida(page);
   await dispatch(page, { type: "applyMove", name: "Isa", square: "13" });
-  await tirar(page, 1, [0.1]); // 13 + 1 = casilla 14 · primer evento negativo
+  await tirar(page, 1, [0.55]); // 13 + 1 = casilla 14 · "Inspección sanitaria" (título con tilde)
   await page.getByRole("button", { name: "Pasar el dispositivo" }).waitFor();
   await pausa(1700);
   await capturar(page, "08-evento-negativo-momento", { espera: 0 });

@@ -121,7 +121,7 @@ export default function ResultsScreen() {
             }}
           >
             <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
-            <span>Ir al menu</span>
+            <span>Ir al menú</span>
           </button>
         </div>
       </section>
