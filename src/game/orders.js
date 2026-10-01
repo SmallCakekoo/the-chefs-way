@@ -1,7 +1,7 @@
 /* Pedidos. Llegan por un timer en GameContext:
-   una tanda cada cierto intervalo (que corre mientras se juega y solo espera
-   mientras la mesa arma un memory): un pedido para dos o mas personas, o dos
-   con los mismos ingredientes.
+   una tanda a la vez, cada cierto intervalo (medio aleatorio) que corre cuando
+   no hay pedidos en la mesa y se congela mientras haya uno: un pedido para dos o
+   mas personas, o dos con los mismos ingredientes.
    Cada pedido = frase del gato + plato + ingredientes + checklist (por
    ingrediente: null (vacio = mal) <-> "yes" (chulito)). Lo marcan los demas.
    Armar el memory analogo NO tiene limite de tiempo: el pedido queda en
@@ -23,12 +23,6 @@ export const DEFAULT_INTERVAL = "normal";
 // y +15 s cada vez que se marca un ingrediente como conseguido (tambien el pan/base).
 export const PLAY_BASE_MS = 210_000;
 export const ORDER_MS_PER_ITEM = 15_000;
-
-// El intervalo entre pedidos corre mientras se juega (solo espera mientras la mesa arma un memory),
-// asi que pueden coincidir varios; este es el tope de pedidos activos a la vez.
-export const MAX_ACTIVE_ORDERS = 4;
-// Si una tanda se retuvo (tirada en curso), la siguiente no llega pegada: minimo este margen.
-export const MIN_GAP_MS = 5_000;
 
 // Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.
 // Con la base de cada plato (pan/tortilla) el pedido trae 4 o 5 casillas.

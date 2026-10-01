@@ -49,7 +49,8 @@ function outcomeFor(nodeId, name, ordersPlayed = 0) {
 }
 /* Tiempos de la tirada: mientras corren, no entra ningún pedido nuevo (ver `holdOrders` en GameContext).
    Si le tocaba llegar a uno, llega apenas termina la espera. */
-const HOLD_OPEN_MS = 10 * 60_000; // dado girando, rama, resultado: nada llega hasta que el jugador toque "Pasar el dispositivo"
+const HOLD_ROLLING_MS = 60_000; // dado girando o eligiendo rama (al ver el resultado pasa a HOLD_READ_MS)
+const HOLD_READ_MS = 7_000; // tiempo para leer lo que salió antes de que pueda llegar un pedido
 const HOLD_NEXT_MS = 1_000; // el dispositivo pasa de mano
 const casillaLabel = (id) => (id === START_NODE ? "la salida" : `la casilla ${id}`);
 
@@ -106,8 +107,8 @@ export default function TurnScreen() {
         text: out.event.text,
       });
     }
-    // el resultado queda abierto hasta que el jugador lo cierre: no puede llegar un pedido mientras lo lee
-    dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
+    // se ve el resultado unos segundos antes de que pueda llegar un pedido
+    dispatch({ type: "holdOrders", until: Date.now() + HOLD_READ_MS });
     setResult(out);
     setPhase("result");
   };
@@ -125,7 +126,7 @@ export default function TurnScreen() {
         text: `Sacaste un ${roll} y te pasas de la meta por ${r.left}. No avanzas: tienes que sacar justo lo que te falta para llegar a la casilla ${FINAL_NODE}.`,
         node: pos,
       });
-      dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
+      dispatch({ type: "holdOrders", until: Date.now() + HOLD_READ_MS });
       setPhase("result");
       return;
     }
@@ -142,7 +143,7 @@ export default function TurnScreen() {
     if (blocked) return;
     sfx.roll();
     // mientras rueda el dado (y si toca elegir rama) no llega ningún pedido
-    dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
+    dispatch({ type: "holdOrders", until: Date.now() + HOLD_ROLLING_MS });
     setPhase("rolling");
     const final = 1 + Math.floor(Math.random() * 6);
     // el cubo gira varias vueltas y frena en la cara que salió; después se mueve la ficha
