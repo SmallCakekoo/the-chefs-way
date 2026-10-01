@@ -24,6 +24,8 @@ import {
   DEFAULT_INTERVAL,
   COIN_START,
   PLAY_BASE_MS,
+  MAX_ACTIVE_ORDERS,
+  MIN_GAP_MS,
   orderPayout,
   COIN_PENALTY,
   ORDER_MS_PER_ITEM,
@@ -633,13 +635,19 @@ function reducer(state, action) {
       };
 
     case "spawnOrders": {
-      if (!state.nextOrderAt || state.orders.some((o) => o.status === "pending")) return state;
+      const pending = state.orders.filter((o) => o.status === "pending");
+      // el pedido nuevo puede llegar con otro en juego, pero no se amontonan: máximo 4 a la vez
+      if (!state.nextOrderAt || pending.length >= MAX_ACTIVE_ORDERS) return state;
       // quien ya llegó a la meta es ayudante: los pedidos se asignan solo a quienes siguen jugando
       // los pedidos son de 2 o más: si queda uno solo en el tablero, los de vacaciones ayudan
       const playing = state.order.filter((n) => !state.finishedOf[n]);
+      // se prefiere a quienes no están ya cocinando otro pedido
+      const busy = new Set(pending.flatMap((o) => o.assignees || []));
+      const free = playing.filter((n) => !busy.has(n));
+      const pool = free.length >= 2 ? free : playing;
       const batch = spawnBatch(
         state.orderSeq,
-        playing.length >= 2 ? playing : state.order,
+        pool.length >= 2 ? pool : state.order,
         state.orders.filter((o) => o.status === "pending").map((o) => o.cat)
       );
       const next = batch.orders.reduce((st, o) => bump(st, o.assignees, "assigned"), state);
@@ -647,7 +655,9 @@ function reducer(state, action) {
         ...next,
         orders: [...state.orders, ...batch.orders],
         orderSeq: batch.seq,
-        nextOrderAt: Date.now() + intervalMs(state.settings.orderInterval),
+        // reloj absoluto: el siguiente se cuenta desde cuando le TOCABA llegar a este (no desde cuando
+        // salió), así lo que se retiene durante una tirada no atrasa toda la fila. Mínimo 5 s entre tandas.
+        nextOrderAt: Math.max(state.nextOrderAt + intervalMs(state.settings.orderInterval), Date.now() + MIN_GAP_MS),
       };
     }
 
@@ -848,9 +858,9 @@ export function GameProvider({ children }) {
         }
       });
 
-      // un pedido a la vez: mientras haya uno activo (armándose o jugándose) el reloj del próximo espera
-      const anyActive = s.orders.some((o) => o.status === "pending" && !o.finale);
-      if (anyActive) {
+      // el reloj del próximo pedido corre mientras se juega, y espera solo mientras la mesa arma un memory
+      const anyBuilding = s.orders.some((o) => o.status === "pending" && !o.finale && o.building);
+      if (anyBuilding) {
         if (s.nextOrderAt) dispatch({ type: "postponeNextOrder", ms: delta });
         return;
       }

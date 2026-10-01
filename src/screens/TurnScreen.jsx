@@ -50,7 +50,7 @@ function outcomeFor(nodeId, name, ordersPlayed = 0) {
 /* Tiempos de la tirada: mientras corren, no entra ningún pedido nuevo (ver `holdOrders` en GameContext).
    Si le tocaba llegar a uno, llega apenas termina la espera. */
 const HOLD_OPEN_MS = 10 * 60_000; // dado girando, rama, resultado: nada llega hasta que el jugador toque "Pasar el dispositivo"
-const HOLD_NEXT_MS = 4_000; // el dispositivo pasa de mano
+const HOLD_NEXT_MS = 1_000; // el dispositivo pasa de mano
 const casillaLabel = (id) => (id === START_NODE ? "la salida" : `la casilla ${id}`);
 
 export default function TurnScreen() {

@@ -1,6 +1,7 @@
 /* Pedidos. Llegan por un timer en GameContext:
-   una tanda a la vez (no llega otra mientras haya un pedido activo): un pedido
-   para dos o mas personas, o dos individuales con los mismos ingredientes.
+   una tanda cada cierto intervalo (que corre mientras se juega y solo espera
+   mientras la mesa arma un memory): un pedido para dos o mas personas, o dos
+   con los mismos ingredientes.
    Cada pedido = frase del gato + plato + ingredientes + checklist (por
    ingrediente: null (vacio = mal) <-> "yes" (chulito)). Lo marcan los demas.
    Armar el memory analogo NO tiene limite de tiempo: el pedido queda en
@@ -12,9 +13,9 @@
 import { CLIENTS, ingredientById } from "./board.js";
 
 export const ORDER_INTERVALS = {
-  fast: { label: "Rápido", ms: 15_000 },
-  normal: { label: "Normal", ms: 20_000 },
-  slow: { label: "Tranquilo", ms: 30_000 },
+  fast: { label: "Rápido", ms: 30_000 },
+  normal: { label: "Normal", ms: 60_000 },
+  slow: { label: "Tranquilo", ms: 120_000 },
 };
 export const DEFAULT_INTERVAL = "normal";
 
@@ -23,12 +24,18 @@ export const DEFAULT_INTERVAL = "normal";
 export const PLAY_BASE_MS = 210_000;
 export const ORDER_MS_PER_ITEM = 15_000;
 
+// El intervalo entre pedidos corre mientras se juega (solo espera mientras la mesa arma un memory),
+// asi que pueden coincidir varios; este es el tope de pedidos activos a la vez.
+export const MAX_ACTIVE_ORDERS = 4;
+// Si una tanda se retuvo (tirada en curso), la siguiente no llega pegada: minimo este margen.
+export const MIN_GAP_MS = 5_000;
+
 // Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.
 // Con la base de cada plato (pan/tortilla) el pedido trae 4 o 5 casillas.
 const FOUR_ITEM_CHANCE = 0.2;
 
 // Probabilidad de que lleguen DOS pedidos a la vez (en vez de uno solo para 2 o mas personas).
-const PAIR_CHANCE = 0.5;
+const PAIR_CHANCE = 0.75;
 const PAIR_CHANCE_FOUR = 0.85; // con 4 jugadores: dos equipos de 2
 
 // Economia del restaurante: monedas iniciales, premio por entregar a tiempo,
