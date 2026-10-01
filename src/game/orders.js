@@ -15,13 +15,13 @@ import { CLIENTS, ingredientById } from "./board.js";
 export const ORDER_INTERVALS = {
   fast: { label: "Rápido", ms: 30_000 },
   normal: { label: "Normal", ms: 60_000 },
-  slow: { label: "Tranquilo", ms: 120_000 },
+  slow: { label: "Tranquilo", ms: 160_000 },
 };
 export const DEFAULT_INTERVAL = "normal";
 
 // Tiempo para jugar el memory: una base desde que la mesa marca "Ya armamos el memory",
 // y +15 s cada vez que se marca un ingrediente como conseguido (tambien el pan/base).
-export const PLAY_BASE_MS = 210_000;
+export const PLAY_BASE_MS = 180_000;
 export const ORDER_MS_PER_ITEM = 15_000;
 
 // Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.

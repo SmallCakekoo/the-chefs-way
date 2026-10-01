@@ -6,6 +6,7 @@ import {
   EVENTS,
   NEGATIVE_EVENTS,
   POWER_CARDS,
+  POWER_CARD_INFO,
   FINAL_NODE,
   START_NODE,
   SHORTCUT_NODES,
@@ -163,6 +164,8 @@ export default function TurnScreen() {
 
   const idx = Math.max(0, players.findIndex((p) => p.name === currentName));
   const label = pos === START_NODE ? "Salida" : `Casilla ${pos}`;
+  // carta ganada en una casilla de carta (no en un evento): se muestra por su nombre
+  const cardInfo = result?.card && !result.event ? POWER_CARD_INFO[result.card] : null;
   const cardOpen = phase === "fork" || phase === "result";
 
   return (
@@ -331,8 +334,13 @@ export default function TurnScreen() {
                   <img className={styles.frameArt} src={COMMON + "rectangleframe.svg"} alt="" aria-hidden="true" draggable="false" />
                   <div className={styles.rectIn}>
                     {result.event && <span className={styles.eyebrow}>{result.title}</span>}
-                    <p className={styles.title}>{result.event ? result.event.title : result.title}</p>
-                    <p className={styles.text}>{result.event ? result.event.text : result.text}</p>
+                    {/* casilla de carta de poder: el título es el nombre corto de la carta ganada */}
+                    <p className={styles.title}>
+                      {result.event ? result.event.title : cardInfo ? cardInfo.name : result.title}
+                    </p>
+                    <p className={styles.text}>
+                      {result.event ? result.event.text : cardInfo ? cardInfo.text : result.text}
+                    </p>
                   </div>
                 </div>
                 <button
