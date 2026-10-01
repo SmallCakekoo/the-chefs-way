@@ -12,9 +12,9 @@
 import { CLIENTS, ingredientById } from "./board.js";
 
 export const ORDER_INTERVALS = {
-  fast: { label: "Rápido", ms: 45_000 },
-  normal: { label: "Normal", ms: 90_000 },
-  slow: { label: "Tranquilo", ms: 150_000 },
+  fast: { label: "Rápido", ms: 15_000 },
+  normal: { label: "Normal", ms: 20_000 },
+  slow: { label: "Tranquilo", ms: 30_000 },
 };
 export const DEFAULT_INTERVAL = "normal";
 
