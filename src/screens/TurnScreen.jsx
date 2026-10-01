@@ -49,15 +49,12 @@ function outcomeFor(nodeId, name, ordersPlayed = 0) {
 }
 /* Tiempos de la tirada: mientras corren, no entra ningún pedido nuevo (ver `holdOrders` en GameContext).
    Si le tocaba llegar a uno, llega apenas termina la espera. */
-const HOLD_ROLLING_MS = 60_000; // dado girando o eligiendo rama (se acorta al ver el resultado)
-const HOLD_READ_MS = 3_000; // leer una casilla normal
-const HOLD_CARD_MS = 5_000; // ver la carta de poder que se ganó
-const HOLD_EVENT_MS = 3_600 + 4_000; // animación del evento (3,6 s) + leer la tarjeta
-const HOLD_NEXT_MS = 1_500; // el dispositivo pasa de mano
+const HOLD_OPEN_MS = 10 * 60_000; // dado girando, rama, resultado: nada llega hasta que el jugador toque "Pasar el dispositivo"
+const HOLD_NEXT_MS = 4_000; // el dispositivo pasa de mano
 const casillaLabel = (id) => (id === START_NODE ? "la salida" : `la casilla ${id}`);
 
 export default function TurnScreen() {
-  const { players, currentPlayer, currentName, posOf, orders, coins, turnNo, finishedOf, happyHour, collabOn, dispatch } =
+  const { players, currentPlayer, currentName, posOf, orders, coins, turnNo, finishedOf, happyHour, collabOn, restockAt, dispatch } =
     useGame();
   const scale = useStageScale();
   const [phase, setPhase] = useState("idle"); // idle | rolling | fork | result
@@ -109,9 +106,8 @@ export default function TurnScreen() {
         text: out.event.text,
       });
     }
-    // tiempo para ver la animación y leer antes de que pueda llegar un pedido
-    const read = out.event ? HOLD_EVENT_MS : out.card ? HOLD_CARD_MS : HOLD_READ_MS;
-    dispatch({ type: "holdOrders", until: Date.now() + read });
+    // el resultado queda abierto hasta que el jugador lo cierre: no puede llegar un pedido mientras lo lee
+    dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
     setResult(out);
     setPhase("result");
   };
@@ -129,7 +125,7 @@ export default function TurnScreen() {
         text: `Sacaste un ${roll} y te pasas de la meta por ${r.left}. No avanzas: tienes que sacar justo lo que te falta para llegar a la casilla ${FINAL_NODE}.`,
         node: pos,
       });
-      dispatch({ type: "holdOrders", until: Date.now() + HOLD_READ_MS });
+      dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
       setPhase("result");
       return;
     }
@@ -146,7 +142,7 @@ export default function TurnScreen() {
     if (blocked) return;
     sfx.roll();
     // mientras rueda el dado (y si toca elegir rama) no llega ningún pedido
-    dispatch({ type: "holdOrders", until: Date.now() + HOLD_ROLLING_MS });
+    dispatch({ type: "holdOrders", until: Date.now() + HOLD_OPEN_MS });
     setPhase("rolling");
     const final = 1 + Math.floor(Math.random() * 6);
     // el cubo gira varias vueltas y frena en la cara que salió; después se mueve la ficha
@@ -341,15 +337,20 @@ export default function TurnScreen() {
                 <button
                   type="button"
                   className={styles.next}
-                  disabled={blocked}
+                  disabled={blocked && !restockAt}
                   onClick={() => {
                     sfx.tap();
+                    if (restockAt) {
+                      dispatch({ type: "restockDone" });
+                      dispatch({ type: "holdOrders", until: Date.now() + HOLD_NEXT_MS });
+                      return;
+                    }
                     dispatch({ type: "holdOrders", until: Date.now() + HOLD_NEXT_MS });
                     dispatch({ type: "nextTurn" });
                   }}
                 >
                   <img src={COMMON + "btn.svg"} alt="" aria-hidden="true" draggable="false" />
-                  <span>{blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}</span>
+                  <span>{restockAt ? "Listo, ya reabastecimos" : blocked ? "Terminen los pedidos" : "Pasar el dispositivo"}</span>
                 </button>
               </>
             )}

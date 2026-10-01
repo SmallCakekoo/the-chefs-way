@@ -4,7 +4,7 @@ import { characterById, ingredientById, faceStyle, POWER_CARD_INFO } from "../ga
 import PlayerRing from "../components/PlayerRing.jsx";
 import CharacterAvatar from "../components/CharacterAvatar.jsx";
 import SpeechBubble from "../components/SpeechBubble.jsx";
-import { COIN_REWARD } from "../game/orders.js";
+import { orderPayout } from "../game/orders.js";
 import { sfx } from "../lib/sfx.js";
 import { useStageScale } from "./menuAssets.js";
 import styles from "./OrderScene.module.css";
@@ -34,18 +34,19 @@ function useNow(active) {
   return now;
 }
 
-/** Casilla del checklist: vacía / ✓ (lo tiene) / ✕ (le falta). */
+/** Casilla del checklist: vacía = le falta · ✓ = lo tiene. */
 function Box({ state, onClick }) {
-  const label = state === "yes" ? "Sí lo tiene" : state === "no" ? "Le falta" : "Sin revisar";
+  const label = state === "yes" ? "Sí lo tiene" : "Le falta";
   return (
     <button
       type="button"
       className={`${styles.box} ${state ? styles["box_" + state] : ""}`}
       aria-label={label}
+      aria-pressed={state === "yes"}
       title={label}
       onClick={onClick}
     >
-      {state === "yes" ? "✓" : state === "no" ? "✕" : ""}
+      {state === "yes" ? "✓" : ""}
     </button>
   );
 }
@@ -58,22 +59,17 @@ function Ticket({ order: o, selected, onSelect, style }) {
   // la carta +15 s acaba de usarse en este pedido: el reloj lo muestra un momento
   const bonusFlash = o.bonusAt && now - o.bonusAt < 2500;
   // al terminar de armar (paso 1 → paso 2) suena un aviso: ¡a jugar el memory!
-  const wasPrep = useRef((o.prepUntil || 0) > Date.now());
-  const prepLeft = (o.prepUntil || 0) - now;
-  const inPrep = prepLeft > 0;
+  const inPrep = !!o.building;
+  const wasPrep = useRef(inPrep);
   useEffect(() => {
     if (wasPrep.current && !inPrep) sfx.order();
     wasPrep.current = inPrep;
   }, [inPrep]);
   const dueLeft = o.dueAt ? o.dueAt - now : null;
   const urgent = dueLeft != null && dueLeft < 15_000;
-  const marked = o.items.filter((_, i) => o.check?.[i] != null).length;
-  const complete = marked === o.items.length;
-  // recompensa según las marcas: ✓ suma, ✕ resta
-  const yes = o.items.filter((_, i) => o.check?.[i] === "yes").length;
-  const no = o.items.filter((_, i) => o.check?.[i] === "no").length;
-  const base = Math.round((COIN_REWARD * (yes - no)) / o.items.length);
-  const delta = base > 0 && happyHour ? base * 2 : base; // Hora feliz: lo ganado vale doble
+  // recompensa según las marcas: cada ✓ suma el precio del ingrediente, cada casilla vacía lo resta
+  // (Hora feliz y la carta de doble ganancia: lo ganado vale doble)
+  const { delta } = orderPayout(o, happyHour || o.doubleCoins ? 2 : 1);
   // paciencia del cliente: lo que queda del tiempo para entregar
   const window = o.dueAt && o.prepUntil ? o.dueAt - o.prepUntil : 0;
   const patience = window ? Math.max(0, Math.min(1, dueLeft / window)) : null;
@@ -112,15 +108,12 @@ function Ticket({ order: o, selected, onSelect, style }) {
           )}
         </div>
 
-        {o.doubleTurn?.length > 0 && (
-          <p className={styles.perk}>Doble turno en el memory: {o.doubleTurn.join(", ")}</p>
-        )}
+        {o.doubleCoins && <p className={styles.perk}>Doble ganancia en este pedido</p>}
         {inPrep ? (
           // primero se arma el memory (el reloj del próximo pedido espera); después, el checklist
           <div className={`${styles.prep} ${bonusFlash ? styles.bonus : ""}`}>
-            <span>¡Armen y jueguen el memory ahora!</span>
-            <b>{mmss(prepLeft)}</b>
-            <em className={styles.stepNext}>Después lo juegan y marcan los ingredientes que consiguieron.</em>
+            <span>¡Armen el memory!</span>
+            <em className={styles.stepNext}>Sin prisa. Cuando esté listo, toquen el botón: ahí empieza el tiempo para jugar{o.batch ? " (los dos pedidos a la vez, por turnos)" : ""}.</em>
             <button
               type="button"
               className={styles.ready}
@@ -130,7 +123,7 @@ function Ticket({ order: o, selected, onSelect, style }) {
                 dispatch({ type: "memoryReady", id: o.id });
               }}
             >
-              Ya lo armamos
+              Ya armamos el memory
             </button>
             {bonusFlash && <i className={styles.plus}>+15 s</i>}
           </div>
@@ -142,7 +135,7 @@ function Ticket({ order: o, selected, onSelect, style }) {
                   <CharacterAvatar id={id} size="sm" ingredient />
                   <span className={styles.rName}>{ingredientById(id).name}</span>
                   <Box
-                    state={o.check?.[i] ?? null}
+                    state={o.check?.[i] === "yes" ? "yes" : null}
                     onClick={(e) => {
                       e.stopPropagation();
                       sfx.select();
@@ -172,15 +165,14 @@ function Ticket({ order: o, selected, onSelect, style }) {
             )}
             <button
               type="button"
-              className={`${styles.done} ${complete && delta < 0 ? styles.doneBad : ""}`}
-              disabled={!complete}
+              className={`${styles.done} ${delta < 0 ? styles.doneBad : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
                 sfx.press();
                 dispatch({ type: "deliverOrder", id: o.id });
               }}
             >
-              {complete ? `Terminado ${delta > 0 ? "+" : ""}${delta}` : `Faltan ${o.items.length - marked}`}
+              Terminado {delta > 0 ? "+" : ""}{delta}
             </button>
           </>
         )}

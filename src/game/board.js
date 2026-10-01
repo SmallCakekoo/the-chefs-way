@@ -34,22 +34,23 @@ export const faceStyle = (c) =>
   c.face
     ? { "--fx": c.face[0], "--fy": c.face[1], "--fz": (c.face[3] || 1.75) / c.face[2], "--far": c.face[2] }
     : undefined;
+// `price`: lo que vale en monedas dentro de un pedido (el pedido paga la suma de lo que se marcó bien).
 // Ingredientes (arte en public/ingredients/, WebP; en disco la carpeta va en minúscula: en Netlify importa). Tres bases + ocho ingredientes.
 // Nota: el archivo de la tortilla se llama "toritillataco.svg" (así está en la carpeta).
 const I = (file) => `/ingredients/${file}.webp`;
 export const INGREDIENTS = [
   // fondo por grupo: bases #81695F · pollo, carne, cebolla, tomate #FCD73D · queso, huevo #50EBC9 · lechuga, aguacate #78D6F6
-  { id: "pan-sandwich", name: "Pan", src: I("breadsandwich"), tint: "#81695f", base: true },
-  { id: "pan-hamburguesa", name: "Pan", src: I("breadburger"), tint: "#81695f", base: true },
-  { id: "tortilla", name: "Tortilla", src: I("toritillataco"), tint: "#81695f", base: true },
-  { id: "pollo", name: "Pollo", src: I("chicken"), tint: "#fcd73d" },
-  { id: "carne", name: "Carne", src: I("meat"), tint: "#fcd73d" },
-  { id: "queso", name: "Queso", src: I("cheese"), tint: "#50ebc9" },
-  { id: "lechuga", name: "Lechuga", src: I("lettuce"), tint: "#78d6f6" },
-  { id: "tomate", name: "Tomate", src: I("tomato"), tint: "#fcd73d" },
-  { id: "aguacate", name: "Aguacate", src: I("avocado"), tint: "#78d6f6" },
-  { id: "huevo", name: "Huevo", src: I("egg"), tint: "#50ebc9" },
-  { id: "cebolla", name: "Cebolla", src: I("onion"), tint: "#fcd73d" },
+  { id: "pan-sandwich", name: "Pan", src: I("breadsandwich"), tint: "#81695f", base: true, price: 20 },
+  { id: "pan-hamburguesa", name: "Pan", src: I("breadburger"), tint: "#81695f", base: true, price: 20 },
+  { id: "tortilla", name: "Tortilla", src: I("toritillataco"), tint: "#81695f", base: true, price: 20 },
+  { id: "pollo", name: "Pollo", src: I("chicken"), tint: "#fcd73d", price: 50 },
+  { id: "carne", name: "Carne", src: I("meat"), tint: "#fcd73d", price: 60 },
+  { id: "queso", name: "Queso", src: I("cheese"), tint: "#50ebc9", price: 30 },
+  { id: "lechuga", name: "Lechuga", src: I("lettuce"), tint: "#78d6f6", price: 20 },
+  { id: "tomate", name: "Tomate", src: I("tomato"), tint: "#fcd73d", price: 20 },
+  { id: "aguacate", name: "Aguacate", src: I("avocado"), tint: "#78d6f6", price: 40 },
+  { id: "huevo", name: "Huevo", src: I("egg"), tint: "#50ebc9", price: 30 },
+  { id: "cebolla", name: "Cebolla", src: I("onion"), tint: "#fcd73d", price: 20 },
 ];
 export const ingredientById = (id) => INGREDIENTS.find((i) => i.id === id) || INGREDIENTS[0];
 
@@ -180,7 +181,7 @@ export const EVENTS = [
   { title: "Propina para todos", text: "¡Los clientes dejaron propina! El restaurante gana 100 monedas por cada jugador de la mesa.", fx: { coinsPerPlayer: 100 } },
   { title: "Hora feliz", text: "Durante una ronda completa, cada pedido que entreguen paga el doble de monedas.", fx: { happyHour: true } },
   // solo sale cuando ya se jugó algún pedido (antes no hay pilas gastadas que reabastecer)
-  { title: "Reabastecimiento", text: "Agreguen 2 cartas extra a la pila de ingrediente que se estaba agotando en el memory.", fx: { restock: true }, needsOrdersPlayed: true },
+  { title: "Reabastecimiento", text: "Agreguen 2 cartas extra a la pila de ingrediente que se estaba agotando en el memory. Los relojes esperan hasta que digan que ya reabastecieron.", fx: { restock: true }, needsOrdersPlayed: true },
   { title: "Colaboración del día", text: "Durante una ronda, si dos o más jugadores entregan pedidos, todos avanzan 1 casilla extra.", fx: { collab: true } },
   { title: "Bono de cocina", text: "{X} recibe una carta de poder al azar.", fx: { powerCard: true } },
 ];
@@ -202,8 +203,8 @@ export const POWER_CARD_INFO = {
     text: "Suma 15 segundos al reloj del pedido para jugar el memory.",
   },
   "dolb turno memoria": {
-    name: "Doble turno",
-    text: "En el memory de este pedido juegas dos turnos seguidos.",
+    name: "Doble ganancia",
+    text: "El pedido al que la apliques paga el doble de monedas, como la Hora feliz.",
   },
   "demandar jugador": {
     name: "Demandar jugador",

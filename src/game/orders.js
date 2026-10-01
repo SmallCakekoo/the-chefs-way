@@ -1,37 +1,48 @@
-/* Pedidos. Llegan en lotes (timer en GameContext), de 3 formas posibles:
-   - "solo": un pedido para una sola persona.
-   - "paralelo": dos pedidos A LA VEZ, cada uno para una persona distinta
-     (los dos se ven en pantalla al mismo tiempo, no hay cola oculta).
-   - "pareja": un pedido para dos personas que lo hacen juntas.
+/* Pedidos. Llegan por un timer en GameContext:
+   una tanda a la vez (no llega otra mientras haya un pedido activo): un pedido
+   para dos o mas personas, o dos individuales con los mismos ingredientes.
    Cada pedido = frase del gato + plato + ingredientes + checklist (por
-   ingrediente: null -> "yes" (chulito) -> "no" (equis) -> null). Lo marcan
-   los demas. Da PREP_MS para armar el memory analogo antes de que se pueda
-   usar el checklist, y un total de PREP_MS + ORDER_WORK_MS antes de vencerse
-   (si se vence sin entregar, resta monedas: eso es lo que puede quebrar el
-   restaurante). Mientras algun pedido esta en su ventana de prep, el reloj
+   ingrediente: null (vacio = mal) <-> "yes" (chulito)). Lo marcan los demas.
+   Armar el memory analogo NO tiene limite de tiempo: el pedido queda en
+   `building` hasta que alguien de la mesa toca "Ya armamos el memory". Ahi
+   empieza a correr el reloj de jugar: PLAY_BASE_MS + ORDER_MS_PER_ITEM por cada
+   ingrediente marcado (si se vence sin entregar, resta monedas: eso es lo que
+   puede quebrar el restaurante). Mientras algun pedido se esta armando, el reloj
    del PROXIMO pedido se pausa (ver timer en GameContext). */
-import { CLIENTS } from "./board.js";
+import { CLIENTS, ingredientById } from "./board.js";
 
 export const ORDER_INTERVALS = {
-  fast: { label: "Rápido", ms: 15_000 },
-  normal: { label: "Normal", ms: 30_000 },
-  slow: { label: "Tranquilo", ms: 45_000 },
+  fast: { label: "Rápido", ms: 45_000 },
+  normal: { label: "Normal", ms: 90_000 },
+  slow: { label: "Tranquilo", ms: 150_000 },
 };
 export const DEFAULT_INTERVAL = "normal";
 
-// Segundos para que la mesa arme el tablero de memoria al llegar el pedido (30 s).
-export const PREP_MS = 30_000;
+// Tiempo para jugar el memory: una base desde que la mesa marca "Ya armamos el memory",
+// y +15 s cada vez que se marca un ingrediente como conseguido (tambien el pan/base).
+export const PLAY_BASE_MS = 60_000;
+export const ORDER_MS_PER_ITEM = 15_000;
 
-// Tiempo extra (despues del prep) para completar el checklist antes de que
-// el pedido se venza solo. Total desde que llega = PREP_MS + ORDER_WORK_MS.
-export const ORDER_WORK_MS = 40_000;
+// Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.
+// Con la base de cada plato (pan/tortilla) el pedido trae 4 o 5 casillas.
+const FOUR_ITEM_CHANCE = 0.2;
 
 // Economia del restaurante: monedas iniciales, premio por entregar a tiempo,
 // castigo por dejar que un pedido se venza. Si las monedas llegan a 0, el
 // restaurante quiebra y se acaba la partida.
 export const COIN_START = 1000;
-export const COIN_REWARD = 120;
 export const COIN_PENALTY = 180;
+
+/** Lo que paga un pedido segun el checklist. Cada ingrediente vale su precio; `max` = lo maximo que
+ *  se puede ganar (todo marcado). Casilla vacia = ingrediente que falta: resta su precio, asi que con
+ *  todo vacio el pedido cobra -max. `mult` (Hora feliz, doble ganancia) solo agranda lo ganado. */
+export function orderPayout(order, mult = 1) {
+  const prices = order.items.map((id) => ingredientById(id).price || 0);
+  const max = prices.reduce((s, p) => s + p, 0);
+  const got = prices.reduce((s, p, i) => s + (order.check?.[i] === "yes" ? p : 0), 0);
+  const base = 2 * got - max;
+  return { max, delta: base > 0 ? base * mult : base };
+}
 
 export function intervalMs(key) {
   const base = (ORDER_INTERVALS[key] || ORDER_INTERVALS[DEFAULT_INTERVAL]).ms;
@@ -133,10 +144,11 @@ function sample(arr, n) {
 }
 
 /** Construye UN pedido ya con sus asignados (`assignees`) decididos. */
-function buildOrder(seq, now, assignees, used) {
+function buildOrder(seq, now, assignees, used, nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2) {
   const dish = pickWeighted(DISHES);
-  const nExtras = 1 + Math.floor(Math.random() * 3); // 1..3
+  // proteina + 2 extras = 3 ingredientes (a veces 3 extras = 4), sin contar la base
   const items = [...dish.base, pick(dish.protein), ...sample(dish.extras, nExtras)];
+  // todas vacias = mal; la mesa marca cada ingrediente (tambien el pan/base) cuando lo consigue
   const check = {};
   items.forEach((_, i) => (check[i] = null));
 
@@ -151,13 +163,11 @@ function buildOrder(seq, now, assignees, used) {
     check,
     status: "pending", // pending | done | expired
     createdAt: now,
-    prepUntil: now + PREP_MS,
-    dueAt: now + PREP_MS + ORDER_WORK_MS,
+    building: true, // la mesa arma el memory sin reloj; dueAt se fija en "memoryReady"
+    prepUntil: 0,
+    dueAt: null,
   };
 }
-
-// Las 3 formas en que puede llegar un lote de pedidos.
-const SPAWN_MODES = ["solo", "paralelo", "pareja"];
 
 // Rotación estable de a quién le toca: bolsa barajada con todos los jugadores; nadie repite
 // hasta que a todos les haya tocado. Al rellenar la bolsa, los que acaban de cocinar van al
@@ -192,28 +202,24 @@ function drawPlayers(players, count) {
   return out;
 }
 
-/** Genera el siguiente lote de pedidos (1 o 2, segun la forma sorteada).
- *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa.
- *  Devuelve { orders, seq } con el nuevo contador. */
+/** Genera lo que llega a la mesa: o UN pedido para dos o mas personas (pareja, trio o grupo), o DOS
+ *  pedidos individuales a la vez, cada uno para una persona distinta. Los dos individuales siempre
+ *  tienen la misma cantidad de ingredientes (3 y 3, o 4 y 4, sin contar la base) para que el tiempo sea igual; comparten
+ *  `batch` y un solo "Ya armamos el memory" los arranca juntos (las dos personas juegan por turnos).
+ *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa. Devuelve { orders, seq }. */
 export function spawnBatch(seq, players, taken = []) {
   const now = Date.now();
   const used = new Set(taken);
-  const mode = players.length >= 2 ? pick(SPAWN_MODES) : "solo";
-  let n = seq;
-
-  if (mode === "paralelo") {
+  if (players.length >= 2 && Math.random() < 0.5) {
     const [a, b] = drawPlayers(players, 2);
-    const o1 = buildOrder(++n, now, [a], used);
-    const o2 = buildOrder(++n, now, [b], used);
-    return { orders: [o1, o2], seq: n, mode };
+    const nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2;
+    const batch = `b${seq + 1}`;
+    const o1 = { ...buildOrder(seq + 1, now, [a], used, nExtras), batch };
+    const o2 = { ...buildOrder(seq + 2, now, [b], used, nExtras), batch };
+    return { orders: [o1, o2], seq: seq + 2 };
   }
-  if (mode === "pareja") {
-    const pair = drawPlayers(players, 2);
-    const o = buildOrder(++n, now, pair, used);
-    return { orders: [o], seq: n, mode };
-  }
-  // solo
-  const [a] = drawPlayers(players, 1);
-  const o = buildOrder(++n, now, a ? [a] : [], used);
-  return { orders: [o], seq: n, mode };
+  const size = players.length >= 2 ? 2 + Math.floor(Math.random() * (Math.min(players.length, 4) - 1)) : 1;
+  const group = drawPlayers(players, size);
+  const o = buildOrder(seq + 1, now, group, used);
+  return { orders: [o], seq: seq + 1 };
 }

@@ -23,8 +23,10 @@ import {
   spawnBatch,
   DEFAULT_INTERVAL,
   COIN_START,
-  COIN_REWARD,
+  PLAY_BASE_MS,
+  orderPayout,
   COIN_PENALTY,
+  ORDER_MS_PER_ITEM,
 } from "./orders.js";
 import { awardBadges } from "./badges.js";
 import { CHEF, makeChefRecipe, mutateRecipe, chefCoinsFor } from "./chef.js";
@@ -164,6 +166,7 @@ function makeInitial() {
     toasts: [], // avisos cortos: { id, text, kind }
     movedTurn: -1, // último turno en el que el jugador en turno ya movió su ficha
     holdUntil: 0, // ningún pedido NUEVO llega antes de esta hora (el jugador está tirando o leyendo su resultado)
+    restockAt: null, // reabastecimiento en curso: relojes congelados hasta que la mesa diga listo
     pausedAt: null, // relojes en pausa (p. ej. mientras se elige a quién demandar)
     savedGame: !!loadSavedGame(), // hay una partida guardada para "Continuar"
     ...p,
@@ -484,6 +487,8 @@ function reducer(state, action) {
       if (fx.coinsPerPlayer) next = { ...next, coins: next.coins + fx.coinsPerPlayer * next.order.length };
       // "una ronda" = hasta que vuelva a tocarle a cada jugador que sigue en el tablero
       const round = next.turnNo + Math.max(1, playingNames(next).length);
+      // reabastecimiento: los relojes esperan hasta que la mesa diga "listo" (ver restockDone)
+      if (fx.restock) next = { ...next, restockAt: Date.now() };
       if (fx.happyHour) next = { ...next, happyUntil: round };
       if (fx.collab) next = { ...next, collab: { until: round, doers: [], done: false } };
       return next.coins <= 0 ? bankruptGame(next) : next;
@@ -500,14 +505,10 @@ function reducer(state, action) {
           ...next,
           orders: next.orders.map((o) => {
             if (o.id !== orderId || o.status !== "pending") return o;
-            // si el memory sigue armándose, el tiempo extra va ahí; el pedido se vence 15 s después
-            const inPrep = o.prepUntil && now < o.prepUntil;
-            return {
-              ...o,
-              prepUntil: inPrep ? o.prepUntil + EXTRA_MEMORY_MS : o.prepUntil,
-              dueAt: o.dueAt ? o.dueAt + EXTRA_MEMORY_MS : o.dueAt,
-              bonusAt: now,
-            };
+            // si el memory sigue armándose todavía no hay reloj: el extra se suma cuando empiece
+            return o.building
+              ? { ...o, extraMs: (o.extraMs || 0) + EXTRA_MEMORY_MS, bonusAt: now }
+              : { ...o, dueAt: o.dueAt ? o.dueAt + EXTRA_MEMORY_MS : o.dueAt, bonusAt: now };
           }),
         };
         return toast(next, `${name} sumó 15 segundos al pedido.`, "good");
@@ -516,10 +517,10 @@ function reducer(state, action) {
         next = {
           ...next,
           orders: next.orders.map((o) =>
-            o.id === orderId ? { ...o, doubleTurn: [...(o.doubleTurn || []), name] } : o
+            o.id === orderId ? { ...o, doubleCoins: true } : o
           ),
         };
-        return toast(next, `${name} juega dos turnos seguidos en el memory.`, "good");
+        return toast(next, `${name} activó la doble ganancia: el pedido paga el doble.`, "good");
       }
       if (card === "demandar jugador" && target) {
         // el demandado puede devolver la demanda con su carta: le rebota a quien demandó
@@ -546,16 +547,30 @@ function reducer(state, action) {
     case "menuIntroDone":
       return state.menuIntro ? { ...state, menuIntro: false } : state;
 
-    // la mesa terminó de armar el memory antes de tiempo: empieza ya el paso 2 (jugar).
-    // El vencimiento no se mueve: lo que sobró del armado queda como tiempo extra para jugar.
+    // la mesa terminó de armar el memory: empieza a correr el tiempo de jugar (15 s por ingrediente)
+    // si el pedido llegó en pareja de individuales, un solo botón arranca los dos relojes a la vez
     case "memoryReady": {
       const now = Date.now();
+      const from = state.orders.find((o) => o.id === action.id);
       return {
         ...state,
         orders: state.orders.map((o) =>
-          o.id === action.id && o.status === "pending" && o.prepUntil > now ? { ...o, prepUntil: now } : o
+          (o.id === action.id || (from?.batch && o.batch === from.batch)) && o.status === "pending" && o.building
+            ? {
+                ...o,
+                building: false,
+                prepUntil: now,
+                dueAt: now + PLAY_BASE_MS + (o.extraMs || 0),
+              }
+            : o
         ),
       };
+    }
+
+    // la mesa terminó de reabastecer: los relojes siguen donde estaban
+    case "restockDone": {
+      if (!state.restockAt) return state;
+      return { ...shiftClocks(state, Date.now() - state.restockAt), restockAt: null };
     }
 
     // la tirada en curso retiene los pedidos nuevos: el que tocaba llega apenas termine la espera
@@ -618,12 +633,13 @@ function reducer(state, action) {
       };
 
     case "spawnOrders": {
-      if (!state.nextOrderAt) return state;
+      if (!state.nextOrderAt || state.orders.some((o) => o.status === "pending")) return state;
       // quien ya llegó a la meta es ayudante: los pedidos se asignan solo a quienes siguen jugando
+      // los pedidos son de 2 o más: si queda uno solo en el tablero, los de vacaciones ayudan
       const playing = state.order.filter((n) => !state.finishedOf[n]);
       const batch = spawnBatch(
         state.orderSeq,
-        playing.length ? playing : state.order,
+        playing.length >= 2 ? playing : state.order,
         state.orders.filter((o) => o.status === "pending").map((o) => o.cat)
       );
       const next = batch.orders.reduce((st, o) => bump(st, o.assignees, "assigned"), state);
@@ -657,16 +673,21 @@ function reducer(state, action) {
       return coins <= 0 ? bankruptGame(next) : next;
     }
 
+    // casilla vacía = falta (mal); ✓ = lo tiene (también el pan/base, que se marca a mano).
+    // Cada ingrediente que se marca por primera vez suma 15 s al reloj del pedido.
     case "setOrderCheck": {
-      const cycle = { null: "yes", yes: "no", no: null };
       return {
         ...state,
         orders: state.orders.map((o) => {
-          if (o.id !== action.id) return o;
-          const cur = o.check?.[action.idx] ?? null;
+          if (o.id !== action.id || o.status !== "pending" || o.building) return o;
+          const on = o.check?.[action.idx] !== "yes";
+          const firstTime = on && !o.credited?.[action.idx];
           return {
             ...o,
-            check: { ...o.check, [action.idx]: cycle[String(cur)] },
+            check: { ...o.check, [action.idx]: on ? "yes" : null },
+            credited: firstTime ? { ...o.credited, [action.idx]: true } : o.credited,
+            dueAt: firstTime && o.dueAt ? o.dueAt + ORDER_MS_PER_ITEM : o.dueAt,
+            bonusAt: firstTime ? Date.now() : o.bonusAt,
           };
         }),
       };
@@ -679,11 +700,10 @@ function reducer(state, action) {
           ? { ...o, status: "done", deliveredAt: Date.now() }
           : o
       );
-      // ¿qué tan bien salió? ✓ suma, ✕ resta: todo ✓ = +recompensa, todo ✕ = -recompensa
-      const items = target?.items || [];
-      const yes = items.filter((_, i) => target.check?.[i] === "yes").length;
-      const no = items.filter((_, i) => target.check?.[i] === "no").length;
-      const score = items.length ? (yes - no) / items.length : 1;
+      // ¿cuánto paga? cada ingrediente tiene su precio: todo marcado = +máximo, todo vacío = -máximo
+      const mult = happyOn(state) || target?.doubleCoins ? 2 : 1;
+      const payout = target?.items?.length ? orderPayout(target, mult).delta : 0;
+      const score = payout;
       // crédito de "manos rápidas" a quien(es) hicieron el pedido (solo si salió mejor que mal)
       let perPlayer = state.perPlayer;
       if (target?.assignees?.length && score > 0) {
@@ -698,8 +718,7 @@ function reducer(state, action) {
         return finishGame({ ...state, orders, perPlayer });
       }
       // entregado: el restaurante gana o pierde moneditas según cómo quedó (Hora feliz: lo ganado vale doble)
-      const mult = score > 0 && happyOn(state) ? 2 : 1;
-      const coins = state.coins + Math.round(COIN_REWARD * score) * mult;
+      const coins = state.coins + payout;
       let next = { ...state, orders, perPlayer, coins };
       // Colaboración del día: cuando 2+ jugadores distintos entregan pedidos en la ronda, todos avanzan 1 casilla
       const c = state.collab;
@@ -821,7 +840,7 @@ export function GameProvider({ children }) {
       const now = Date.now();
       const delta = now - last;
       last = now;
-      if (s.pausedAt) return; // relojes en pausa: nada se vence ni llega
+      if (s.pausedAt || s.restockAt) return; // relojes en pausa: nada se vence ni llega
 
       s.orders.forEach((o) => {
         if (o.status === "pending" && !o.finale && o.dueAt && now >= o.dueAt) {
@@ -829,14 +848,9 @@ export function GameProvider({ children }) {
         }
       });
 
-      const anyPrep = s.orders.some(
-        (o) =>
-          o.status === "pending" &&
-          !o.finale &&
-          o.prepUntil &&
-          now < o.prepUntil
-      );
-      if (anyPrep) {
+      // un pedido a la vez: mientras haya uno activo (armándose o jugándose) el reloj del próximo espera
+      const anyActive = s.orders.some((o) => o.status === "pending" && !o.finale);
+      if (anyActive) {
         if (s.nextOrderAt) dispatch({ type: "postponeNextOrder", ms: delta });
         return;
       }
