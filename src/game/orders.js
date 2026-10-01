@@ -20,7 +20,7 @@ export const DEFAULT_INTERVAL = "normal";
 
 // Tiempo para jugar el memory: una base desde que la mesa marca "Ya armamos el memory",
 // y +15 s cada vez que se marca un ingrediente como conseguido (tambien el pan/base).
-export const PLAY_BASE_MS =300_000;
+export const PLAY_BASE_MS = 210_000;
 export const ORDER_MS_PER_ITEM = 15_000;
 
 // Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.
@@ -43,7 +43,10 @@ export const COIN_PENALTY = 180;
 export function orderPayout(order, mult = 1) {
   const prices = order.items.map((id) => ingredientById(id).price || 0);
   const max = prices.reduce((s, p) => s + p, 0);
-  const got = prices.reduce((s, p, i) => s + (order.check?.[i] === "yes" ? p : 0), 0);
+  const got = prices.reduce(
+    (s, p, i) => s + (order.check?.[i] === "yes" ? p : 0),
+    0,
+  );
   const base = 2 * got - max;
   return { max, delta: base > 0 ? base * mult : base };
 }
@@ -57,7 +60,9 @@ export function intervalMs(key) {
 /** "15 s" o "2 min" segun el valor. */
 export function humanInterval(key) {
   const ms = (ORDER_INTERVALS[key] || ORDER_INTERVALS[DEFAULT_INTERVAL]).ms;
-  return ms < 60_000 ? `${Math.round(ms / 1000)} s` : `${Math.round(ms / 60_000)} min`;
+  return ms < 60_000
+    ? `${Math.round(ms / 1000)} s`
+    : `${Math.round(ms / 60_000)} min`;
 }
 
 // Platos: base obligatoria + extras posibles + peso (mas peso = sale mas).
@@ -67,9 +72,33 @@ export function humanInterval(key) {
 // Sándwich (pan de sándwich): pollo + queso, lechuga, tomate, aguacate, huevo.
 // Hamburguesa (pan de hamburguesa): carne + queso, lechuga, tomate, huevo, cebolla.
 export const DISHES = [
-  { id: "taco", name: "Taco", pide: "un taquito", base: ["tortilla"], protein: ["pollo", "carne"], extras: ["queso", "lechuga", "tomate", "aguacate", "huevo", "cebolla"], weight: 4 },
-  { id: "sandwich", name: "Sándwich", pide: "un sanduchito", base: ["pan-sandwich"], protein: ["pollo"], extras: ["queso", "lechuga", "tomate", "aguacate", "huevo"], weight: 3 },
-  { id: "hamburguesa", name: "Hamburguesa", pide: "una hamburguesita", base: ["pan-hamburguesa"], protein: ["carne"], extras: ["queso", "lechuga", "tomate", "huevo", "cebolla"], weight: 4 },
+  {
+    id: "taco",
+    name: "Taco",
+    pide: "un taquito",
+    base: ["tortilla"],
+    protein: ["pollo", "carne"],
+    extras: ["queso", "lechuga", "tomate", "aguacate", "huevo", "cebolla"],
+    weight: 4,
+  },
+  {
+    id: "sandwich",
+    name: "Sándwich",
+    pide: "un sanduchito",
+    base: ["pan-sandwich"],
+    protein: ["pollo"],
+    extras: ["queso", "lechuga", "tomate", "aguacate", "huevo"],
+    weight: 3,
+  },
+  {
+    id: "hamburguesa",
+    name: "Hamburguesa",
+    pide: "una hamburguesita",
+    base: ["pan-hamburguesa"],
+    protein: ["carne"],
+    extras: ["queso", "lechuga", "tomate", "huevo", "cebolla"],
+    weight: 4,
+  },
 ];
 
 // El cliente es uno de los animalitos de public/clients/ (CLIENTS en board.js) y SIEMPRE con su nombre
@@ -148,10 +177,20 @@ function sample(arr, n) {
 }
 
 /** Construye UN pedido ya con sus asignados (`assignees`) decididos. */
-function buildOrder(seq, now, assignees, used, nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2) {
+function buildOrder(
+  seq,
+  now,
+  assignees,
+  used,
+  nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2,
+) {
   const dish = pickWeighted(DISHES);
   // proteina + 2 extras = 3 ingredientes (a veces 3 extras = 4), sin contar la base
-  const items = [...dish.base, pick(dish.protein), ...sample(dish.extras, nExtras)];
+  const items = [
+    ...dish.base,
+    pick(dish.protein),
+    ...sample(dish.extras, nExtras),
+  ];
   // todas vacias = mal; la mesa marca cada ingrediente (tambien el pan/base) cuando lo consigue
   const check = {};
   items.forEach((_, i) => (check[i] = null));
@@ -191,7 +230,10 @@ function drawPlayers(players, count) {
     if (!turnBag.length) {
       const recent = new Set([...lastTurn, ...out]);
       const fresh = sample(players, players.length);
-      turnBag = [...fresh.filter((p) => !recent.has(p)), ...fresh.filter((p) => recent.has(p))];
+      turnBag = [
+        ...fresh.filter((p) => !recent.has(p)),
+        ...fresh.filter((p) => recent.has(p)),
+      ];
     }
     // primero alguien que no haya cocinado en el lote anterior; si no hay, el siguiente de la bolsa
     let i = turnBag.findIndex((p) => !out.includes(p) && !lastTurn.includes(p));
@@ -217,16 +259,26 @@ export function spawnBatch(seq, players, taken = []) {
   // dos pedidos a la vez: con 4 jugadores son dos EQUIPOS de 2 (así pueden robarse al otro equipo)
   // y sale mucho más seguido; con menos jugadores, dos individuales
   const teams = players.length >= 4;
-  if (players.length >= 2 && Math.random() < (teams ? PAIR_CHANCE_FOUR : PAIR_CHANCE)) {
+  if (
+    players.length >= 2 &&
+    Math.random() < (teams ? PAIR_CHANCE_FOUR : PAIR_CHANCE)
+  ) {
     const nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2;
     const batch = `b${seq + 1}`;
-    const who = teams ? sample(drawPlayers(players, 4), 4) : drawPlayers(players, 2);
-    const groups = teams ? [who.slice(0, 2), who.slice(2, 4)] : [[who[0]], [who[1]]];
+    const who = teams
+      ? sample(drawPlayers(players, 4), 4)
+      : drawPlayers(players, 2);
+    const groups = teams
+      ? [who.slice(0, 2), who.slice(2, 4)]
+      : [[who[0]], [who[1]]];
     const o1 = { ...buildOrder(seq + 1, now, groups[0], used, nExtras), batch };
     const o2 = { ...buildOrder(seq + 2, now, groups[1], used, nExtras), batch };
     return { orders: [o1, o2], seq: seq + 2 };
   }
-  const size = players.length >= 2 ? 2 + Math.floor(Math.random() * (Math.min(players.length, 4) - 1)) : 1;
+  const size =
+    players.length >= 2
+      ? 2 + Math.floor(Math.random() * (Math.min(players.length, 4) - 1))
+      : 1;
   const group = drawPlayers(players, size);
   const o = buildOrder(seq + 1, now, group, used);
   return { orders: [o], seq: seq + 1 };
