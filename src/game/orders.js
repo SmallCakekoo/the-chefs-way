@@ -20,12 +20,16 @@ export const DEFAULT_INTERVAL = "normal";
 
 // Tiempo para jugar el memory: una base desde que la mesa marca "Ya armamos el memory",
 // y +15 s cada vez que se marca un ingrediente como conseguido (tambien el pan/base).
-export const PLAY_BASE_MS = 60_000;
+export const PLAY_BASE_MS =300_000;
 export const ORDER_MS_PER_ITEM = 15_000;
 
 // Pedidos: 3 ingredientes SIN contar la base (proteina + 2 extras) y, de vez en cuando, 4. Nunca mas.
 // Con la base de cada plato (pan/tortilla) el pedido trae 4 o 5 casillas.
 const FOUR_ITEM_CHANCE = 0.2;
+
+// Probabilidad de que lleguen DOS pedidos a la vez (en vez de uno solo para 2 o mas personas).
+const PAIR_CHANCE = 0.5;
+const PAIR_CHANCE_FOUR = 0.85; // con 4 jugadores: dos equipos de 2
 
 // Economia del restaurante: monedas iniciales, premio por entregar a tiempo,
 // castigo por dejar que un pedido se venza. Si las monedas llegan a 0, el
@@ -203,19 +207,23 @@ function drawPlayers(players, count) {
 }
 
 /** Genera lo que llega a la mesa: o UN pedido para dos o mas personas (pareja, trio o grupo), o DOS
- *  pedidos individuales a la vez, cada uno para una persona distinta. Los dos individuales siempre
+ *  pedidos a la vez: individuales (2-3 jugadores) o uno por equipo de 2 (4 jugadores). Los dos individuales siempre
  *  tienen la misma cantidad de ingredientes (3 y 3, o 4 y 4, sin contar la base) para que el tiempo sea igual; comparten
  *  `batch` y un solo "Ya armamos el memory" los arranca juntos (las dos personas juegan por turnos).
  *  `seq` = ultimo numero de pedido usado. `players` = nombres de la mesa. Devuelve { orders, seq }. */
 export function spawnBatch(seq, players, taken = []) {
   const now = Date.now();
   const used = new Set(taken);
-  if (players.length >= 2 && Math.random() < 0.5) {
-    const [a, b] = drawPlayers(players, 2);
+  // dos pedidos a la vez: con 4 jugadores son dos EQUIPOS de 2 (así pueden robarse al otro equipo)
+  // y sale mucho más seguido; con menos jugadores, dos individuales
+  const teams = players.length >= 4;
+  if (players.length >= 2 && Math.random() < (teams ? PAIR_CHANCE_FOUR : PAIR_CHANCE)) {
     const nExtras = Math.random() < FOUR_ITEM_CHANCE ? 3 : 2;
     const batch = `b${seq + 1}`;
-    const o1 = { ...buildOrder(seq + 1, now, [a], used, nExtras), batch };
-    const o2 = { ...buildOrder(seq + 2, now, [b], used, nExtras), batch };
+    const who = teams ? sample(drawPlayers(players, 4), 4) : drawPlayers(players, 2);
+    const groups = teams ? [who.slice(0, 2), who.slice(2, 4)] : [[who[0]], [who[1]]];
+    const o1 = { ...buildOrder(seq + 1, now, groups[0], used, nExtras), batch };
+    const o2 = { ...buildOrder(seq + 2, now, groups[1], used, nExtras), batch };
     return { orders: [o1, o2], seq: seq + 2 };
   }
   const size = players.length >= 2 ? 2 + Math.floor(Math.random() * (Math.min(players.length, 4) - 1)) : 1;
